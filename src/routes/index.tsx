@@ -11,6 +11,9 @@ export const Route = createFileRoute("/")({
 function Index() {
   return (
     <div className="p-8 max-w-4xl mx-auto prose dark:prose-invert">
+      <div className="bg-muted p-4 rounded-md mb-8 font-mono text-sm whitespace-pre-wrap">
+        /skill:advanced-technical-skills-master
+      </div>
       <h1 id="prompt-para-construir-gitflow-versión-con-gemini-como-motor-de-ia">Prompt para construir "GitFlow" (versión con Gemini como motor de IA)</h1>
       <p>Copia y pega el siguiente prompt en tu asistente de código (Claude Code, Cursor, Windsurf, o el propio Gemini CLI) para que te ayude a construir el proyecto. Está escrito para que el asistente entienda el producto completo y empiece a generar la estructura del proyecto.</p>
       <hr />
@@ -39,7 +42,7 @@ function Index() {
         <li>Login con GitHub (OAuth) y selección del repositorio a conectar.</li>
         <li>Pantalla de chat: el usuario describe el cambio que quiere ("agrega validación de email al formulario de registro").</li>
         <li>El agente explora el código, piensa en voz alta (mostrar streaming de su razonamiento/pasos si es posible) y genera una propuesta de cambios.</li>
-        <li>Vista de revisión tipo diff (como la vista de "Files changed" de un PR de GitHub): el usuario ve línea por línea qué cambia, puede aprobar todo, aprobar parcialmente, pedir ajustes, o rechazar.</li>
+        <li>Vista de revisión tipo diff (como la vista de "Files changed" de un PR de GitHub): el usuario ve línea por línea qué cambia, puede aprobar todo, aprobar parcialmente, pedir ajustes, o recalcar.</li>
         <li>Al aprobar: commit + push a rama nueva + (opcional) apertura automática de PR, con un resumen del cambio generado por el propio modelo como descripción del PR.</li>
       </ol>
       <h3 id="4-stack-técnico-sugerido">4. Stack técnico sugerido</h3>
