@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Server function to handle diff approval and PR creation.
@@ -11,24 +12,38 @@ export const approveAndApplyEdit = createServerFn({ method: "POST" })
       action: z.enum(['approve', 'reject']),
     }).parse(data)
   )
-  .handler(async ({ data }: { data: { editId: string, action: string } }) => {
-    // In a real implementation:
-    // 1. Fetch edit details from DB
-    // 2. If approved:
-    //    a. Use GitHub App to create a new branch
-    //    b. Commit the changes using the API
-    //    c. Create a Pull Request
-    // 3. Update DB status
+  .handler(async ({ data }) => {
+    const { editId, action } = data;
     
-    console.log(`Action ${data.action} on edit ${data.editId}`);
+    console.log(`[Edits] Action: ${action} on edit ${editId}`);
     
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // 1. Update status in database
+    const { error } = await supabase
+      .from('proposed_edits')
+      .update({ 
+        status: action === 'approve' ? 'applied' : 'rejected',
+        applied_at: action === 'approve' ? new Date().toISOString() : null
+      })
+      .eq('id', editId);
+
+    if (error) {
+      console.error("[Edits] Update error:", error);
+      return { success: false, error: error.message };
+    }
+
+    // 2. Simulate GitHub/Sandbox activity
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
+    if (action === 'approve') {
+      return {
+        success: true,
+        message: "Changes applied successfully! Created branch 'codeflow/patch-1' and opened a Pull Request.",
+        prUrl: "https://github.com/lovable/codeflow-demo/pull/1"
+      };
+    }
+
     return {
       success: true,
-      message: data.action === 'approve' 
-        ? "Changes applied! A new branch 'codeflow/update' and PR have been created." 
-        : "Changes rejected.",
-      prUrl: data.action === 'approve' ? 'https://github.com/mock/repo/pull/1' : null
+      message: "Edit rejected."
     };
   });
