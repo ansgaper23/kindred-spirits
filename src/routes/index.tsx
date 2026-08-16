@@ -1,19 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
   return (
     <div className="p-8 max-w-4xl mx-auto prose dark:prose-invert">
-      <div className="bg-muted p-4 rounded-md mb-8 font-mono text-sm whitespace-pre-wrap">
-        /skill:advanced-technical-skills-master
-      </div>
       <h1 id="prompt-para-construir-gitflow-versión-con-gemini-como-motor-de-ia">Prompt para construir "GitFlow" (versión con Gemini como motor de IA)</h1>
       <p>Copia y pega el siguiente prompt en tu asistente de código (Claude Code, Cursor, Windsurf, o el propio Gemini CLI) para que te ayude a construir el proyecto. Está escrito para que el asistente entienda el producto completo y empiece a generar la estructura del proyecto.</p>
       <hr />
@@ -34,7 +27,7 @@ function Index() {
       <ul>
         <li>Registra una <strong>GitHub App</strong> (no un OAuth App genérico) con permisos mínimos: lectura/escritura de contenido de repositorio y de pull requests, nada más.</li>
         <li>Al conectar, clona el repositorio dentro de un <strong>sandbox aislado y efímero</strong> (contenedor Docker por sesión, se destruye al terminar).</li>
-        <li>Todo el trabajo del agente (lectura, escritura, ejecución de comandos) ocurre dentro de ese contenedor, nunca en la infraestructura compartida.</li>
+        <li>Todo el trabalho del agente (lectura, escritura, ejecución de comandos) ocurre dentro de ese contenedor, nunca en la infraestructura compartida.</li>
         <li>Al aprobar los cambios, el backend hace commit en una rama nueva (<code>codeflow/cambio-&lt;id&gt;</code>) y opcionalmente abre un Pull Request vía la API de GitHub, dejando la rama principal intacta.</li>
       </ul>
       <h3 id="3-flujo-de-usuario">3. Flujo de usuario</h3>
@@ -42,22 +35,22 @@ function Index() {
         <li>Login con GitHub (OAuth) y selección del repositorio a conectar.</li>
         <li>Pantalla de chat: el usuario describe el cambio que quiere ("agrega validación de email al formulario de registro").</li>
         <li>El agente explora el código, piensa en voz alta (mostrar streaming de su razonamiento/pasos si es posible) y genera una propuesta de cambios.</li>
-        <li>Vista de revisión tipo diff (como la vista de "Files changed" de un PR de GitHub): el usuario ve línea por línea qué cambia, puede aprobar todo, aprobar parcialmente, pedir ajustes, o recalcar.</li>
+        <li>Vista de revisión tipo diff (como la vista de "Files changed" de un PR de GitHub): el usuario ve línea por línea qué cambia, puede aprobar todo, aprobar parcialmente, pedir ajustes, o rechazar.</li>
         <li>Al aprobar: commit + push a rama nueva + (opcional) apertura automática de PR, con un resumen del cambio generado por el propio modelo como descripción del PR.</li>
       </ol>
       <h3 id="4-stack-técnico-sugerido">4. Stack técnico sugerido</h3>
       <ul>
         <li><strong>Frontend:</strong> Next.js (React) + Tailwind CSS, con streaming de respuestas del agente (Server-Sent Events o WebSockets).</li>
         <li><strong>Backend:</strong> Node.js (TypeScript) o Python (FastAPI), orquestando las llamadas a la API de Gemini y el sandbox.</li>
-        <li><strong>Sandbox de ejecución:</strong> contenedores Docker efímeros (o un servicio gestionado tipo e2b.dev) por sesión de trabalho.</li>
+        <li><strong>Sandbox de ejecución:</strong> contenedores Docker efímeros (o un servicio gestionado tipo e2b.dev) por sesión de trabajo.</li>
         <li><strong>Base de datos:</strong> PostgreSQL para usuarios, repos conectados, historial de conversaciones y cambios aplicados.</li>
         <li><strong>Autenticación:</strong> OAuth de GitHub + GitHub App para permisos de repo.</li>
-        <li><strong>Cola/orquestación de trabalhos largos:</strong> Redis + BullMQ (o Celery si es Python), ya que las tareas del agente pueden tardar.</li>
+        <li><strong>Cola/orquestación de trabajos largos:</strong> Redis + BullMQ (o Celery si es Python), ya que las tareas del agente pueden tardar.</li>
       </ul>
       <h3 id="5-seguridad-y-cumplimiento-no-negociable">5. Seguridad y cumplimiento (no negociable)</h3>
       <ul>
         <li>Nunca almacenar tokens de GitHub en texto plano; cifrarlos en reposo.</li>
-        <li>Aislar completamente cada sesión de trabalho (un contenedor por repo/sesión, sin persistencia entre usuarios).</li>
+        <li>Aislar completamente cada sesión de trabajo (un contenedor por repo/sesión, sin persistencia entre usuarios).</li>
         <li>Publicar Términos de Uso y Política de Privacidad reales antes de lanzar, especialmente porque se accede a código privado de terceros.</li>
         <li>Registrar límites de uso por usuario (tokens de la API de Gemini consumidos) para controlar costos, incluso si el plan comercial se presenta como "acceso ilimitado por tiempo".</li>
         <li>Loguear todas las acciones del agente (qué archivos leyó, qué propuso, qué se aprobó) para auditoría.</li>
