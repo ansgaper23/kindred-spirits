@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 /**
@@ -10,14 +10,14 @@ import { z } from "zod";
  * 4. Storing agent reasoning and proposed edits
  */
 export const processAgentMessage = createServerFn({ method: "POST" })
-  .inputValidator((data) => 
+  .inputValidator((data: unknown) => 
     z.object({
       conversationId: z.string().uuid(),
       message: z.string(),
       repositoryId: z.string().uuid(),
     }).parse(data)
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data }: { data: { conversationId: string, message: string, repositoryId: string } }) => {
     // In a real implementation, we would:
     // 1. Initialize Gemini client with process.env['GEMINI_API_KEY']
     // 2. Initialize e2b sandbox for the repository
