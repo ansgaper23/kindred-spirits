@@ -91,18 +91,48 @@ function DashboardHome() {
 
   const githubLoginMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "github",
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-          scopes: "repo read:user workflow",
-        },
-      });
-      if (error) throw error;
+      const popup = window.open("", "codeflow-github-oauth", "width=620,height=760");
+      if (!popup) throw new Error("El navegador bloqueó la ventana emergente. Permítela e intenta de nuevo.");
+
+      try {
+        const { authorizationUrl } = await runStartGithubOAuth();
+        const completion = new Promise<{ code: string; state: string }>((resolve, reject) => {
+          let poll: number | undefined;
+          const cleanup = () => {
+            window.removeEventListener("message", onMessage);
+            if (poll !== undefined) window.clearInterval(poll);
+          };
+          const onMessage = (event: MessageEvent) => {
+            if (event.origin !== window.location.origin) return;
+            if (event.data?.source !== "codeflow-github-oauth") return;
+            cleanup();
+            if (event.data.ok) resolve({ code: event.data.code, state: event.data.state });
+            else reject(new Error(event.data.error ?? "La autorización falló."));
+          };
+          window.addEventListener("message", onMessage);
+          poll = window.setInterval(() => {
+            if (popup.closed) {
+              cleanup();
+              reject(new Error("Cerraste la ventana antes de terminar."));
+            }
+          }, 500);
+        });
+        popup.location.href = authorizationUrl;
+        const { code, state } = await completion;
+        return await runCompleteGithubOAuth({ data: { code, state } });
+      } catch (err) {
+        popup.close();
+        throw err;
+      }
+    },
+    onSuccess: (result) => {
+      toast.success(`GitHub conectado como @${result.githubUsername}.`);
+      queryClient.invalidateQueries({ queryKey: ["github-repos"] });
     },
     onError: (err: unknown) =>
       toast.error(err instanceof Error ? err.message : "No se pudo iniciar la conexión con GitHub."),
   });
+
 
   const disconnectGithubMutation = useMutation({
     mutationFn: () => runDisconnectGithub(),

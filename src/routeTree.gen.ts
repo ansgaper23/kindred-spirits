@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardRepositoryIdRouteImport } from './routes/dashboard/$repositoryId'
+import { Route as OauthGithubCallbackRouteImport } from './routes/oauth/github/callback'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +47,11 @@ const DashboardRepositoryIdRoute = DashboardRepositoryIdRouteImport.update({
   path: '/$repositoryId',
   getParentRoute: () => DashboardRoute,
 } as any)
+const OauthGithubCallbackRoute = OauthGithubCallbackRouteImport.update({
+  id: '/oauth/github/callback',
+  path: '/oauth/github/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/dashboard/$repositoryId': typeof DashboardRepositoryIdRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/oauth/github/callback': typeof OauthGithubCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/dashboard/$repositoryId': typeof DashboardRepositoryIdRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/oauth/github/callback': typeof OauthGithubCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -70,6 +78,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/dashboard/$repositoryId': typeof DashboardRepositoryIdRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/oauth/github/callback': typeof OauthGithubCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -80,8 +89,15 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/$repositoryId'
     | '/dashboard/'
+    | '/oauth/github/callback'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/signup' | '/dashboard/$repositoryId' | '/dashboard'
+  to:
+    | '/'
+    | '/login'
+    | '/signup'
+    | '/dashboard/$repositoryId'
+    | '/dashboard'
+    | '/oauth/github/callback'
   id:
     | '__root__'
     | '/'
@@ -90,6 +106,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/$repositoryId'
     | '/dashboard/'
+    | '/oauth/github/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -97,6 +114,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRouteWithChildren
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
+  OauthGithubCallbackRoute: typeof OauthGithubCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -143,6 +161,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRepositoryIdRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/oauth/github/callback': {
+      id: '/oauth/github/callback'
+      path: '/oauth/github/callback'
+      fullPath: '/oauth/github/callback'
+      preLoaderRoute: typeof OauthGithubCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -165,6 +190,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRouteWithChildren,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
+  OauthGithubCallbackRoute: OauthGithubCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
