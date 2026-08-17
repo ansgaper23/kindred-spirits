@@ -108,7 +108,7 @@ function DashboardHome() {
             if (poll !== undefined) window.clearInterval(poll);
           };
           const onMessage = (event: MessageEvent) => {
-            if (event.origin !== window.location.origin) return;
+            if (event.origin !== window.location.origin && !event.origin.includes('lovableproject.com')) return;
             if (event.data?.source !== "codeflow-github-oauth") return;
             cleanup();
             if (event.data.ok) resolve({ code: event.data.code, state: event.data.state });
