@@ -54,7 +54,7 @@ function DashboardHome() {
   const runListGithubRepos = useServerFn(listGithubRepos);
   const runConnectRepository = useServerFn(connectRepository);
   const runDisconnectRepository = useServerFn(disconnectRepository);
-  const runSaveGithubToken = useServerFn(saveGithubToken);
+  const runEnsureProfile = useServerFn(ensureProfile);
   const runDisconnectGithub = useServerFn(disconnectGithub);
 
   const reposQuery = useQuery({
