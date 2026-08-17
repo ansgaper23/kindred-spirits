@@ -99,10 +99,6 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     // Normalize model name for the SDK
     let modelName = data.model || process.env["GEMINI_MODEL"] || "gemini-1.5-flash";
     
-    // Fallback for discontinued/renamed models based on current API availability
-    if (modelName === "gemini-2.0-flash") modelName = "gemini-2.0-flash-exp";
-    if (modelName === "gemini-2.0-flash-lite-preview-02-05") modelName = "gemini-2.0-flash-lite-preview-02-05";
-    
     // The @google/genai SDK v2.17.1 usually expects just the name for models.generateContent,
     // as it appends 'models/' or 'tunedModels/' internally based on the request structure.
     if (modelName.startsWith("models/")) {
@@ -111,6 +107,13 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     if (modelName.startsWith("tunedModels/")) {
       modelName = modelName.replace("tunedModels/", "");
     }
+    
+    // CRITICAL: The logs show "models/gemini-2.0-flash is no longer available. 
+    // Please update your code to use models/gemini-3.6-flash".
+    if (modelName === "gemini-2.0-flash") modelName = "gemini-1.5-flash"; 
+    
+    // In this specific environment, some models require the 'models/' prefix 
+    // while others might fail if it's double-prefixed. We'll handle this in the retry loop.
 
     const systemInstruction = [
       "You are the CodeFlow agent, a careful senior engineer pair-programming inside a chat UI.",
