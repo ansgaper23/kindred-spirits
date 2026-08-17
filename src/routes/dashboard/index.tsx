@@ -291,40 +291,58 @@ function DashboardHome() {
                       />
                     </div>
                     <div className="max-h-64 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                      {(githubReposQuery.data?.repos ?? [])
-                        .filter(repo => 
-                          repo.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (repo.description && repo.description.toLowerCase().includes(searchQuery.toLowerCase()))
-                        )
-                        .map((repo) => (
-                        <button
-                          key={repo.fullName}
-                          className="w-full text-left px-3 py-2.5 rounded-md hover:bg-white/5 flex items-center justify-between gap-3 text-sm disabled:opacity-50 transition-colors border border-transparent hover:border-white/10 group"
-                          disabled={connectMutation.isPending}
-                          onClick={() => connectMutation.mutate(repo.fullName)}
-                        >
-                          <span className="flex items-center gap-3 min-w-0">
-                            {repo.private ? (
-                              <Lock className="w-3.5 h-3.5 shrink-0 text-amber-500/70" />
-                            ) : (
-                              <Globe className="w-3.5 h-3.5 shrink-0 text-blue-400/70" />
-                            )}
-                            <div className="flex flex-col truncate">
-                              <span className="truncate font-medium text-slate-200 group-hover:text-white">{repo.fullName}</span>
-                              {repo.description && (
-                                <span className="text-[11px] text-slate-500 truncate">{repo.description}</span>
+                      {(githubReposQuery.data?.repos ?? []).length > 0 ? (
+                        (githubReposQuery.data?.repos ?? [])
+                          .filter(repo => 
+                            repo.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            (repo.description && repo.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                          )
+                          .map((repo) => (
+                          <button
+                            key={repo.fullName}
+                            className="w-full text-left px-3 py-2.5 rounded-md hover:bg-white/5 flex items-center justify-between gap-3 text-sm disabled:opacity-50 transition-colors border border-transparent hover:border-white/10 group"
+                            disabled={connectMutation.isPending}
+                            onClick={() => connectMutation.mutate(repo.fullName)}
+                          >
+                            <span className="flex items-center gap-3 min-w-0">
+                              {repo.private ? (
+                                <Lock className="w-3.5 h-3.5 shrink-0 text-amber-500/70" />
+                              ) : (
+                                <Globe className="w-3.5 h-3.5 shrink-0 text-blue-400/70" />
                               )}
-                            </div>
-                          </span>
-                          <Plus className="w-4 h-4 shrink-0 text-slate-600 group-hover:text-blue-400 transition-colors" />
-                        </button>
-                      ))}
+                              <div className="flex flex-col truncate">
+                                <span className="truncate font-medium text-slate-200 group-hover:text-white">{repo.fullName}</span>
+                                {repo.description && (
+                                  <span className="text-[11px] text-slate-500 truncate">{repo.description}</span>
+                                )}
+                              </div>
+                            </span>
+                            <Plus className="w-4 h-4 shrink-0 text-slate-600 group-hover:text-blue-400 transition-colors" />
+                          </button>
+                        ))
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-10 text-center space-y-3">
+                          <Github className="w-8 h-8 text-slate-600 opacity-20" />
+                          <p className="text-sm text-slate-500 max-w-[200px]">
+                            No se encontraron repositorios. Prueba a pulsar "Actualizar" o verifica los permisos en GitHub.
+                          </p>
+                          <Button 
+                            variant="link" 
+                            size="sm" 
+                            className="text-blue-400 text-xs"
+                            onClick={() => window.open('https://github.com/settings/connections/applications/' + (process.env['GITHUB_OAUTH_CLIENT_ID'] || ''), '_blank')}
+                          >
+                            Revisar permisos en GitHub <ExternalLink className="w-3 h-3 ml-1" />
+                          </Button>
+                        </div>
+                      )}
                       {githubReposQuery.data?.repos && 
+                       githubReposQuery.data.repos.length > 0 &&
                        githubReposQuery.data.repos.filter(repo => 
                          repo.fullName.toLowerCase().includes(searchQuery.toLowerCase())
                        ).length === 0 && (
                         <p className="text-sm text-slate-500 text-center py-8">
-                          {searchQuery ? "No se encontraron repositorios que coincidan." : "No encontramos repositorios en tu cuenta."}
+                          No se encontraron repositorios que coincidan con "{searchQuery}".
                         </p>
                       )}
                     </div>

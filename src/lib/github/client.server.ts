@@ -122,9 +122,9 @@ export async function getRepo(
 }
 
 /** List repos the authenticated user has access to (requires a token). */
-export async function listMyRepos(token: string, perPage = 50): Promise<RepoSummary[]> {
+export async function listMyRepos(token: string, perPage = 100): Promise<RepoSummary[]> {
   const data = await githubRequest<GithubRepoJson[]>(
-    `/user/repos?per_page=${perPage}&sort=updated&affiliation=owner,collaborator`,
+    `/user/repos?per_page=${perPage}&sort=updated&affiliation=owner,collaborator,organization_member`,
     { token },
   );
   return data.map(toRepoSummary);
