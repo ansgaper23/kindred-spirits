@@ -179,14 +179,20 @@ function DashboardHome() {
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
       ) : repos.length === 0 ? (
-        <Card className="py-16">
+        <Card className="py-16 bg-slate-900/40 border-white/10 backdrop-blur-sm shadow-[0_0_40px_-15px_rgba(34,211,238,0.2)]">
           <CardContent className="flex flex-col items-center text-center gap-3">
-            <FolderGit2 className="w-10 h-10 text-muted-foreground/50" />
-            <p className="font-medium">Todavía no conectaste ningún repositorio</p>
-            <p className="text-sm text-muted-foreground max-w-sm">
+            <div className="w-16 h-16 rounded-full bg-cyan-500/10 flex items-center justify-center mb-2">
+              <FolderGit2 className="w-8 h-8 text-cyan-400" />
+            </div>
+            <p className="font-medium text-slate-100 text-lg">Todavía no conectaste ningún repositorio</p>
+            <p className="text-sm text-slate-400 max-w-sm mb-4">
               Conecta uno para empezar a describirle cambios en lenguaje natural al agente.
             </p>
-            <Button size="sm" onClick={() => setDialogOpen(true)}>
+            <Button 
+              size="lg" 
+              onClick={() => setDialogOpen(true)}
+              className="border-0 bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_0_20px_-4px_rgba(34,211,238,0.7)] hover:from-cyan-400 hover:to-blue-500"
+            >
               <Plus className="w-4 h-4 mr-2" />
               Conectar repositorio
             </Button>
@@ -197,7 +203,7 @@ function DashboardHome() {
           {repos.map((repo) => (
             <Card
               key={repo.id}
-              className="hover:border-primary/50 transition-colors group relative"
+              className="bg-slate-900/40 border-white/10 backdrop-blur-sm hover:border-cyan-400/50 hover:bg-slate-900/60 transition-all group relative shadow-[0_4px_20px_-10px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_-10px_rgba(34,211,238,0.4)]"
             >
               <Link
                 to="/dashboard/$repositoryId"
@@ -206,23 +212,25 @@ function DashboardHome() {
               >
                 <CardHeader>
                   <div className="flex items-center gap-2 mb-2">
-                    <FolderGit2 className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                    <CardTitle className="text-lg truncate">{repo.name}</CardTitle>
+                    <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center group-hover:bg-cyan-500/20 transition-colors">
+                      <FolderGit2 className="w-4 h-4 text-cyan-400" />
+                    </div>
+                    <CardTitle className="text-lg truncate text-slate-100">{repo.name}</CardTitle>
                   </div>
-                  <CardDescription className="line-clamp-2 min-h-10">
+                  <CardDescription className="line-clamp-2 min-h-10 text-slate-400">
                     {repo.description || "Sin descripción"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <span className="text-xs text-muted-foreground">
-                    {repo.owner}/{repo.name} · rama {repo.default_branch}
+                  <span className="text-xs text-slate-500 font-mono">
+                    {repo.owner}/{repo.name} · {repo.default_branch}
                   </span>
                 </CardContent>
               </Link>
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-3 right-3 h-7 w-7 text-muted-foreground hover:text-destructive"
+                className="absolute top-3 right-3 h-7 w-7 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10"
                 disabled={disconnectMutation.isPending}
                 onClick={(e) => {
                   e.preventDefault();
