@@ -223,9 +223,9 @@ export const processAgentMessage = createServerFn({ method: "POST" })
           model: modelName,
           contents,
           systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
-          tools: [
+          tools: tools?.[0]?.functionDeclarations ? [
             { functionDeclarations: tools[0].functionDeclarations.map(fd => ({ ...fd, parameters: fd.parameters as any })) }
-          ],
+          ] : tools,
         });
         console.log(`[Agent] Iteration ${iteration} response received.`);
       } catch (err) {
