@@ -246,8 +246,9 @@ export const processAgentMessage = createServerFn({ method: "POST" })
 
       const responseParts: NonNullable<Content["parts"]> = [];
       for (const call of calls) {
+        if (!call.name) continue;
         toolLog.push(`${call.name}(${JSON.stringify(call.args ?? {})})`);
-        const result = await executeTool(call.name ?? "", call.args);
+        const result = await executeTool(call.name, call.args);
         responseParts.push({ functionResponse: { name: call.name, response: { result } } });
       }
       contents.push({ role: "user", parts: responseParts });
