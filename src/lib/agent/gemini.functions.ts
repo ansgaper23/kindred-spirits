@@ -283,7 +283,18 @@ export const processAgentMessage = createServerFn({ method: "POST" })
         });
       }
 
-      contents.push({ role: "user", parts: toolResponses });
+        toolResponses.push({
+          role: "user",
+          parts: [{
+            functionResponse: {
+              name: call.name,
+              response: { result: toolResult },
+            },
+          }],
+        });
+      }
+
+      contents.push(...toolResponses);
 
       if (iteration === MAX_TOOL_ITERATIONS - 1) {
         finalText = "No pude terminar de explorar el repositorio en el tiempo asignado. ¿Puedes ser más específico?";
