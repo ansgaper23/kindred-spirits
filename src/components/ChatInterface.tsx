@@ -139,17 +139,17 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
   };
 
   return (
-    <div className="flex flex-col h-[600px] w-full max-w-3xl border rounded-xl bg-background shadow-lg overflow-hidden transition-all duration-300 ease-in-out">
-      <div className="p-4 border-b bg-muted/30 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Bot className="w-5 h-5 text-primary" />
+    <div className="flex flex-col h-[650px] w-full max-w-3xl border border-white/10 rounded-2xl bg-slate-900/60 shadow-[0_0_60px_-15px_rgba(34,211,238,0.2)] backdrop-blur-xl overflow-hidden transition-all duration-500 ease-in-out">
+      <div className="p-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-[0_0_15px_-3px_rgba(34,211,238,0.5)]">
+            <Bot className="w-6 h-6 text-slate-950" />
           </div>
           <div>
-            <h2 className="font-semibold text-sm leading-none">CodeFlow Agent</h2>
-            <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Ready to help
+            <h2 className="font-bold text-sm tracking-tight text-white">CodeFlow Agent</h2>
+            <span className="text-[10px] text-cyan-400 font-medium flex items-center gap-1.5 mt-0.5 uppercase tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+              Neural engine active
             </span>
           </div>
         </div>
@@ -167,8 +167,10 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
             >
               <div
                 className={cn(
-                  "w-9 h-9 rounded-full flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-105",
-                  msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-card border",
+                  "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_15px_-2px_rgba(34,211,238,0.4)]",
+                  msg.role === "user" 
+                    ? "bg-gradient-to-br from-cyan-400 to-blue-600 text-slate-950" 
+                    : "bg-slate-800 border border-white/10 text-cyan-400",
                 )}
               >
                 {msg.role === "user" ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
@@ -181,10 +183,10 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
                 )}
               >
                 {msg.thought && (
-                  <Card className="p-3 text-xs bg-muted/40 text-muted-foreground border-dashed border-muted-foreground/20 leading-relaxed">
-                    <div className="flex items-center gap-1.5 mb-1.5 font-semibold uppercase tracking-wider opacity-70">
+                  <Card className="p-3 text-[11px] bg-slate-900/40 text-slate-400 border-dashed border-cyan-500/20 leading-relaxed font-mono">
+                    <div className="flex items-center gap-1.5 mb-2 font-bold uppercase tracking-[0.15em] text-[9px] text-cyan-400/70">
                       <ChevronRight className="w-3 h-3" />
-                      Reasoning
+                      Neural Reasoning
                     </div>
                     {msg.thought}
                   </Card>
@@ -192,10 +194,10 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
 
                 <Card
                   className={cn(
-                    "p-4 text-sm leading-relaxed shadow-sm",
+                    "p-4 text-sm leading-relaxed shadow-sm transition-all duration-300",
                     msg.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-tr-none"
-                      : "bg-card rounded-tl-none",
+                      ? "bg-gradient-to-br from-cyan-500/90 to-blue-600/90 border-0 text-white rounded-tr-none"
+                      : "bg-slate-800/80 border-white/10 text-slate-100 rounded-tl-none backdrop-blur-sm",
                   )}
                 >
                   {msg.content}
@@ -204,9 +206,9 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
                 {msg.proposedEdits && msg.proposedEdits.length > 0 && (
                   <div className="space-y-3 mt-2 w-full">
                     {msg.proposedEdits.map((edit, j) => (
-                      <Card key={j} className="overflow-hidden border-primary/20 bg-primary/5">
-                        <div className="p-3 border-b border-primary/10 bg-primary/10 flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+                      <Card key={j} className="overflow-hidden border-cyan-500/20 bg-cyan-500/5 shadow-[0_0_30px_-10px_rgba(34,211,238,0.1)]">
+                        <div className="p-3 border-b border-cyan-500/10 bg-cyan-500/10 flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-[11px] font-bold text-cyan-400 uppercase tracking-wider">
                             <FileText className="w-3.5 h-3.5" />
                             {edit.file_path}
                           </div>
@@ -243,37 +245,37 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
                           </pre>
                         </div>
                         {edit.status !== "applied" && edit.status !== "rejected" && (
-                          <div className="p-2 bg-muted/50 border-t flex gap-2">
+                          <div className="p-2 bg-slate-900/80 border-t border-white/10 flex gap-2">
                             <Button
                               size="sm"
-                              className="flex-1 h-8 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white"
+                              className="flex-1 h-8 text-[11px] font-bold uppercase tracking-wider bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 border border-emerald-500/30 transition-all"
                               disabled={applyingEditId !== null}
                               onClick={() => edit.id && onEditAction(edit.id, "approve")}
                             >
                               {applyingEditId === edit.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                                <Loader2 className="w-3 h-3 animate-spin mr-2" />
                               ) : (
-                                <Check className="w-3 h-3 mr-1" />
+                                <Check className="w-3 h-3 mr-2" />
                               )}
                               Approve & Apply
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
-                              className="flex-1 h-8 text-xs font-medium"
+                              className="flex-1 h-8 text-[11px] font-bold uppercase tracking-wider bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 border border-rose-500/20 transition-all"
                               disabled={applyingEditId !== null}
                               onClick={() => edit.id && onEditAction(edit.id, "reject")}
                             >
-                              <X className="w-3 h-3 mr-1" />
+                              <X className="w-3 h-3 mr-2" />
                               Reject
                             </Button>
                           </div>
                         )}
                         {(edit.status === "applied" || edit.status === "rejected") && (
-                          <div className="p-2 bg-muted/50 border-t text-center text-[10px] text-muted-foreground">
+                          <div className="p-2 bg-slate-900/80 border-t border-white/10 text-center text-[10px] text-slate-500 font-medium uppercase tracking-widest">
                             {edit.status === "applied"
-                              ? "Cambios aplicados — revisa el Pull Request en GitHub."
-                              : "Cambio rechazado."}
+                              ? "Cambios aplicados · Rama actualizada"
+                              : "Cambio rechazado"}
                           </div>
                         )}
                       </Card>
@@ -285,18 +287,18 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
           ))}
           {isProcessing && (
             <div className="flex gap-4">
-              <div className="w-9 h-9 rounded-full bg-card border flex items-center justify-center shrink-0 shadow-sm">
+              <div className="w-9 h-9 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center shrink-0 shadow-sm text-cyan-400 animate-pulse">
                 <Bot className="w-5 h-5" />
               </div>
               <div className="flex flex-col gap-2 max-w-[80%]">
-                <Card className="p-4 bg-card rounded-tl-none border-dashed animate-pulse flex items-center gap-3">
-                  <div className="flex space-x-1">
-                    <div className="w-1.5 h-1.5 bg-muted-foreground/40 rounded-full animate-bounce" />
-                    <div className="w-1.5 h-1.5 bg-muted-foreground/40 rounded-full animate-bounce [animation-delay:0.2s]" />
-                    <div className="w-1.5 h-1.5 bg-muted-foreground/40 rounded-full animate-bounce [animation-delay:0.4s]" />
+                <Card className="p-4 bg-slate-800/50 rounded-tl-none border-dashed border-white/10 animate-pulse flex items-center gap-3 shadow-[0_0_20px_rgba(34,211,238,0.05)]">
+                  <div className="flex space-x-1.5">
+                    <div className="w-2 h-2 bg-cyan-400/60 rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-cyan-400/60 rounded-full animate-bounce [animation-delay:0.2s]" />
+                    <div className="w-2 h-2 bg-cyan-400/60 rounded-full animate-bounce [animation-delay:0.4s]" />
                   </div>
-                  <span className="text-sm text-muted-foreground italic">
-                    Agent is exploring your code...
+                  <span className="text-sm text-slate-400 italic font-medium">
+                    Explorando código...
                   </span>
                 </Card>
               </div>
@@ -305,7 +307,7 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
         </div>
       </ScrollArea>
 
-      <div className="p-4 border-t bg-muted/20 backdrop-blur-sm">
+      <div className="p-5 border-t border-white/10 bg-slate-950/40 backdrop-blur-xl">
         <form
           className="flex gap-2 relative"
           onSubmit={(e) => {
@@ -314,18 +316,18 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
           }}
         >
           <Input
-            placeholder="Describe the changes you want (e.g. 'Add email validation to the login form')"
+            placeholder="Describe los cambios... (ej. 'Agrega validación de email')"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isProcessing}
-            className="bg-background pr-12 py-6 rounded-xl border-2 focus-visible:ring-primary transition-all"
+            className="bg-slate-900/50 text-slate-100 placeholder:text-slate-500 border-white/10 focus:border-cyan-500/50 pr-12 py-6 rounded-2xl focus-visible:ring-cyan-500/20 transition-all"
           />
           <Button
             type="submit"
             disabled={isProcessing || !input.trim()}
-            className="absolute right-1.5 top-1.5 h-9 w-9 rounded-lg p-0 shadow-md"
+            className="absolute right-2 top-2 h-8 w-8 rounded-xl p-0 bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-lg hover:shadow-cyan-500/20 disabled:opacity-30 transition-all"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-3.5 h-3.5" />
           </Button>
         </form>
         <p className="text-[10px] text-center text-muted-foreground mt-3 uppercase tracking-widest font-medium opacity-60">
