@@ -94,76 +94,72 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     const { GoogleGenAI } = await import("@google/genai");
     const { createTwoFilesPatch } = await import("diff");
 
-    // The newer @google/genai SDK (>= 0.x / 1.x) uses a constructor that takes an options object or string.
-    // If it's the very latest, it might expect { apiKey: string }.
-    const genAI = new GoogleGenAI(apiKey as any);
+    const genAI = new GoogleGenAI({ apiKey });
     const modelName = data.model || process.env["GEMINI_MODEL"] || "gemini-1.5-flash";
-    
-    const model = (genAI as any).getGenerativeModel({
-      model: modelName,
-      systemInstruction: [
-        "You are the CodeFlow agent, a careful senior engineer pair-programming inside a chat UI.",
-        `You are working on the GitHub repository ${repo.full_name} (default branch: ${repo.default_branch}).`,
-        "Use list_files/read_file/search_code to explore before proposing anything — never guess file contents.",
-        "When you're ready to make a change, call propose_edit with the file's complete new content. You may call it more than once for multi-file changes.",
-        "If the request is unclear or too broad, ask a clarifying question in plain text instead of calling propose_edit.",
-        "Keep prose replies short. Reply in the same language the user wrote in.",
-      ].join("\n"),
-      tools: [
-        {
-          functionDeclarations: [
-            {
-              name: "list_files",
-              description:
-                "List files and folders at a path in the repository (empty path = repo root).",
-              parameters: {
-                type: "OBJECT" as any,
-                properties: {
-                  path: {
-                    type: "STRING",
-                    description: "Directory path, e.g. 'src/components'. Empty for root.",
-                  },
+
+    const systemInstruction = [
+      "You are the CodeFlow agent, a careful senior engineer pair-programming inside a chat UI.",
+      `You are working on the GitHub repository ${repo.full_name} (default branch: ${repo.default_branch}).`,
+      "Use list_files/read_file/search_code to explore before proposing anything — never guess file contents.",
+      "When you're ready to make a change, call propose_edit with the file's complete new content. You may call it more than once for multi-file changes.",
+      "If the request is unclear or too broad, ask a clarifying question in plain text instead of calling propose_edit.",
+      "Keep prose replies short. Reply in the same language the user wrote in.",
+    ].join("\n");
+
+    const tools = [
+      {
+        functionDeclarations: [
+          {
+            name: "list_files",
+            description:
+              "List files and folders at a path in the repository (empty path = repo root).",
+            parameters: {
+              type: "OBJECT" as any,
+              properties: {
+                path: {
+                  type: "STRING",
+                  description: "Directory path, e.g. 'src/components'. Empty for root.",
                 },
               },
             },
-            {
-              name: "read_file",
-              description: "Read the text content of a single file in the repository.",
-              parameters: {
-                type: "OBJECT" as any,
-                properties: {
-                  path: { type: "STRING", description: "File path, e.g. 'src/App.tsx'." },
-                },
-                required: ["path"],
+          },
+          {
+            name: "read_file",
+            description: "Read the text content of a single file in the repository.",
+            parameters: {
+              type: "OBJECT" as any,
+              properties: {
+                path: { type: "STRING", description: "File path, e.g. 'src/App.tsx'." },
               },
+              required: ["path"],
             },
-            {
-              name: "search_code",
-              description: "Search the repository's code for a string or symbol.",
-              parameters: {
-                type: "OBJECT" as any,
-                properties: { query: { type: "STRING" } },
-                required: ["query"],
+          },
+          {
+            name: "search_code",
+            description: "Search the repository's code for a string or symbol.",
+            parameters: {
+              type: "OBJECT" as any,
+              properties: { query: { type: "STRING" } },
+              required: ["query"],
+            },
+          },
+          {
+            name: "propose_edit",
+            description:
+              "Propose a change to a file for the user to review and approve. Provide the FULL new content of the file (not a diff). Call this once per file you want to change, only after you've read the file's current content.",
+            parameters: {
+              type: "OBJECT" as any,
+              properties: {
+                file_path: { type: "STRING" },
+                new_content: { type: "STRING", description: "The complete new file content." },
+                summary: { type: "STRING", description: "One sentence describing the change." },
               },
+              required: ["file_path", "new_content", "summary"],
             },
-            {
-              name: "propose_edit",
-              description:
-                "Propose a change to a file for the user to review and approve. Provide the FULL new content of the file (not a diff). Call this once per file you want to change, only after you've read the file's current content.",
-              parameters: {
-                type: "OBJECT" as any,
-                properties: {
-                  file_path: { type: "STRING" },
-                  new_content: { type: "STRING", description: "The complete new file content." },
-                  summary: { type: "STRING", description: "One sentence describing the change." },
-                },
-                required: ["file_path", "new_content", "summary"],
-              },
-            },
-          ],
-        },
-      ],
-    });
+          },
+        ],
+      },
+    ];
 
     async function executeTool(
       name: string,
@@ -211,20 +207,41 @@ export const processAgentMessage = createServerFn({ method: "POST" })
       }
     }
 
-    const chat = model.startChat({ history: [] });
     const toolLog: string[] = [];
     let finalText = "";
     const editCalls: Array<{ file_path: string; new_content: string; summary: string }> = [];
 
-    // Send the first message
-    let result = await chat.sendMessage(data.message);
-    
+    // The @google/genai library actually uses models.generateContent directly on the instance
+    // or through a model object. In the new SDK version installed, it uses generateContent.
+    let contents: any[] = [{ role: "user", parts: [{ text: data.message }] }];
+
     for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
+      const result = await genAI.models.generateContent({
+        model: modelName,
+        systemInstruction,
+        tools,
+        contents,
+      });
+
       const response = result.response;
-      const calls = response.functionCalls() || [];
+      const candidate = response.candidates?.[0];
+      const modelContent = candidate?.content;
+
+      if (!modelContent) {
+        throw new Error("No response from AI model.");
+      }
+
+      contents.push(modelContent);
+
+      const calls = candidate?.content?.parts
+        ?.filter((p: any) => p.functionCall)
+        ?.map((p: any) => p.functionCall) || [];
 
       if (calls.length === 0) {
-        finalText = response.text();
+        finalText = candidate?.content?.parts
+          ?.filter((p: any) => p.text)
+          ?.map((p: any) => p.text)
+          ?.join("") || "";
         break;
       }
 
@@ -244,7 +261,7 @@ export const processAgentMessage = createServerFn({ method: "POST" })
         break;
       }
 
-      const toolResponses = [];
+      const toolResponses: any[] = [];
       for (const call of calls) {
         if (!call.name) continue;
         toolLog.push(`${call.name}(${JSON.stringify(call.args ?? {})})`);
@@ -257,8 +274,7 @@ export const processAgentMessage = createServerFn({ method: "POST" })
         });
       }
 
-      // Send tool responses back to continue the loop
-      result = await chat.sendMessage(toolResponses);
+      contents.push({ role: "user", parts: toolResponses });
 
       if (iteration === MAX_TOOL_ITERATIONS - 1) {
         finalText = "No pude terminar de explorar el repositorio en el tiempo asignado. ¿Puedes ser más específico?";
