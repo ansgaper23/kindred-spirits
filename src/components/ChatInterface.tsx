@@ -66,12 +66,17 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
       });
 
       if (response.success) {
-        setMessages(prev => [...prev, {
+        const newMessage: Message = {
           role: 'assistant',
           content: response.content,
-          thought: response.thought,
-          proposedEdits: response.proposedEdits.map((e: any) => ({ ...e, id: crypto.randomUUID() })),
-        }]);
+          thought: response.thought || undefined,
+          proposedEdits: response.proposedEdits ? response.proposedEdits.map((e: any) => ({ 
+            ...e, 
+            id: crypto.randomUUID(),
+            status: 'pending'
+          })) : undefined,
+        };
+        setMessages(prev => [...prev, newMessage]);
       }
     } catch (error) {
       console.error('Failed to process message:', error);
