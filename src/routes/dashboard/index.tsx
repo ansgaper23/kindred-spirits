@@ -180,8 +180,8 @@ function DashboardHome() {
             Añadir más
           </Button>
         )}
-      </div>
-          <DialogContent className="sm:max-w-md">
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-slate-100">
             <DialogHeader>
               <DialogTitle>Conectar un repositorio</DialogTitle>
               <DialogDescription>
