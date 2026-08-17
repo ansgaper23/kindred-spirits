@@ -228,8 +228,18 @@ export const processAgentMessage = createServerFn({ method: "POST" })
           ] : tools,
         });
         console.log(`[Agent] Iteration ${iteration} response received.`);
-      } catch (err) {
+      } catch (err: any) {
         console.error(`[Agent] Iteration ${iteration} failed:`, err);
+        // If it's a validation error or something we can report to user
+        const errorMessage = err?.message || String(err);
+        if (errorMessage.includes("400") || errorMessage.includes("invalid")) {
+           return {
+            success: false as const,
+            content: `Error de la IA: ${errorMessage}`,
+            thought: toolLog.length > 0 ? toolLog.join("\n") : undefined,
+            conversationId,
+          };
+        }
         throw err;
       }
 
