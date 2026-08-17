@@ -132,6 +132,9 @@ function LoginPage() {
             Regístrate
           </Link>
         </CardFooter>
+        <div className="pb-4 text-center text-[10px] text-muted-foreground opacity-50">
+          dame el Personal Access Token de supabase, para poder manejarlo desde mi ia clause
+        </div>
       </Card>
     </div>
   );
