@@ -228,8 +228,9 @@ export const processAgentMessage = createServerFn({ method: "POST" })
             temperature: 0.2,
             topP: 0.95,
           } as any,
-          contents,
-        });
+        },
+        contents,
+      });
         console.log(`[Agent] Iteration ${iteration} response received.`);
       } catch (err) {
         console.error(`[Agent] Iteration ${iteration} failed:`, err);
