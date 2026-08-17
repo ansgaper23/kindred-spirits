@@ -45,6 +45,7 @@ export const processAgentMessage = createServerFn({ method: "POST" })
       };
     }
 
+
     const { data: repo, error: repoError } = await context.supabase
       .from("repositories")
       .select("*")
@@ -95,7 +96,7 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     const { createTwoFilesPatch } = await import("diff");
 
     const ai = new GoogleGenAI({ apiKey });
-    const model = process.env["GEMINI_MODEL"] || "gemini-2.5-pro";
+    const model = process.env["GEMINI_MODEL"] || "gemini-1.5-pro";
 
     const tools = [
       {
@@ -314,5 +315,13 @@ export const processAgentMessage = createServerFn({ method: "POST" })
       thought: toolLog.length > 0 ? toolLog.join("\n") : undefined,
       proposedEdits,
       conversationId,
+    };
+  });
+
+export const checkAgentConfig = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    return {
+      geminiConfigured: Boolean(process.env["GEMINI_API_KEY"]),
     };
   });

@@ -24,6 +24,9 @@ import {
   connectRepository,
   disconnectRepository,
 } from "@/lib/repos/repos.functions";
+import { checkAgentConfig } from "@/lib/agent/gemini.functions";
+import { AlertCircle, Terminal } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const Route = createFileRoute("/dashboard/")({
   component: DashboardHome,
@@ -38,6 +41,12 @@ function DashboardHome() {
   const runListGithubRepos = useServerFn(listGithubRepos);
   const runConnectRepository = useServerFn(connectRepository);
   const runDisconnectRepository = useServerFn(disconnectRepository);
+  const runCheckConfig = useServerFn(checkAgentConfig);
+
+  const configQuery = useQuery({
+    queryKey: ["agent-config"],
+    queryFn: () => runCheckConfig(),
+  });
 
   const reposQuery = useQuery({
     queryKey: ["repositories"],
@@ -75,6 +84,26 @@ function DashboardHome() {
 
   return (
     <div className="space-y-6">
+      {!configQuery.isLoading && !configQuery.data?.geminiConfigured && (
+        <Alert variant="destructive" className="bg-rose-500/10 border-rose-500/20 text-rose-200">
+          <AlertCircle className="h-4 w-4 text-rose-400" />
+          <AlertTitle>Configuración incompleta</AlertTitle>
+          <AlertDescription className="text-rose-300/80">
+            Falta la clave API de Gemini. El agente no podrá procesar mensajes hasta que se configure la variable <code>GEMINI_API_KEY</code>.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {configQuery.data?.geminiConfigured && (
+        <Alert className="bg-cyan-500/10 border-cyan-500/20 text-cyan-200">
+          <Terminal className="h-4 w-4 text-cyan-400" />
+          <AlertTitle>Agente Activo</AlertTitle>
+          <AlertDescription className="text-cyan-300/80">
+            Gemini está listo para ayudarte con tu código en los repositorios conectados.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold tracking-tight text-white">Tus repositorios</h2>

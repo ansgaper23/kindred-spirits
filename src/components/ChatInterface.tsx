@@ -5,8 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useServerFn } from "@tanstack/react-start";
-import { processAgentMessage } from "@/lib/agent/gemini.functions";
+import { processAgentMessage, checkAgentConfig } from "@/lib/agent/gemini.functions";
 import { approveAndApplyEdit } from "@/lib/agent/edits.functions";
+import { useQuery } from "@tanstack/react-query";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -39,6 +42,14 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
 
   const processMessage = useServerFn(processAgentMessage);
   const handleEditAction = useServerFn(approveAndApplyEdit);
+  const runCheckConfig = useServerFn(checkAgentConfig);
+
+  const configQuery = useQuery({
+    queryKey: ["agent-config"],
+    queryFn: () => runCheckConfig(),
+  });
+
+  const isConfigured = configQuery.data?.geminiConfigured;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -156,6 +167,15 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
       </div>
 
       <ScrollArea className="flex-1 p-6" ref={scrollRef}>
+        {!configQuery.isLoading && !isConfigured && (
+          <Alert variant="destructive" className="mb-6 bg-rose-500/10 border-rose-500/20 text-rose-200">
+            <AlertCircle className="h-4 w-4 text-rose-400" />
+            <AlertTitle>Configuración necesaria</AlertTitle>
+            <AlertDescription className="text-rose-300/80">
+              Para hablar con el agente, primero configura la <code>GEMINI_API_KEY</code> en la configuración del proyecto o contacta al administrador.
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="space-y-6">
           {messages.map((msg, i) => (
             <div
@@ -319,12 +339,12 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
             placeholder="Describe los cambios... (ej. 'Agrega validación de email')"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            disabled={isProcessing}
-            className="bg-slate-900/50 text-slate-100 placeholder:text-slate-500 border-white/10 focus:border-cyan-500/50 pr-12 py-6 rounded-2xl focus-visible:ring-cyan-500/20 transition-all"
+            disabled={isProcessing || !isConfigured}
+            className="bg-slate-900/50 text-slate-100 placeholder:text-slate-500 border-white/10 focus:border-cyan-500/50 pr-12 py-6 rounded-2xl focus-visible:ring-cyan-500/20 transition-all disabled:opacity-50"
           />
           <Button
             type="submit"
-            disabled={isProcessing || !input.trim()}
+            disabled={isProcessing || !input.trim() || !isConfigured}
             className="absolute right-2 top-2 h-8 w-8 rounded-xl p-0 bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-lg hover:shadow-cyan-500/20 disabled:opacity-30 transition-all"
           >
             <Send className="w-3.5 h-3.5" />
