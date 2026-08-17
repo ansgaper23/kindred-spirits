@@ -46,8 +46,11 @@ function DashboardLayout() {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
-        Cargando…
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-slate-400 font-medium tracking-wider uppercase">Iniciando sistemas...</p>
+        </div>
       </div>
     );
   }
