@@ -51,6 +51,7 @@ function DashboardHome() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [manualFullName, setManualFullName] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const runListRepositories = useServerFn(listRepositories);
   const runListGithubRepos = useServerFn(listGithubRepos);
@@ -133,6 +134,7 @@ function DashboardHome() {
     onSuccess: (result) => {
       toast.success(`GitHub conectado como @${result.githubUsername}.`);
       queryClient.invalidateQueries({ queryKey: ["github-repos"] });
+      setDialogOpen(true);
     },
     onError: (err: unknown) =>
       toast.error(err instanceof Error ? err.message : "No se pudo iniciar la conexión con GitHub."),
@@ -169,14 +171,14 @@ function DashboardHome() {
               <h3 className="text-lg font-bold text-slate-100">GitHub OAuth App</h3>
             </div>
             {githubReposQuery.data?.connected ? (
-              <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400 uppercase tracking-widest w-fit">
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400 uppercase tracking-widest w-fit shadow-[0_0_10px_rgba(16,185,129,0.1)]">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Conectado (@{githubReposQuery.data.username})
               </div>
             ) : (
-              <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-[10px] font-bold text-rose-400 uppercase tracking-widest w-fit">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                No conectado
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-500/10 border border-white/5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-fit">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+                Desconectado
               </div>
             )}
           </div>
@@ -279,27 +281,50 @@ function DashboardHome() {
                         Desconectar
                       </Button>
                     </div>
-                    <div className="max-h-64 overflow-y-auto space-y-1">
-                      {(githubReposQuery.data?.repos ?? []).map((repo) => (
+                    <div className="relative mb-3">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <Input
+                        placeholder="Buscar en tus repositorios..."
+                        className="pl-9 bg-slate-950/50 border-white/5 h-9 text-sm"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                    <div className="max-h-64 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                      {(githubReposQuery.data?.repos ?? [])
+                        .filter(repo => 
+                          repo.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (repo.description && repo.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                        )
+                        .map((repo) => (
                         <button
                           key={repo.fullName}
-                          className="w-full text-left px-3 py-2 rounded-md hover:bg-accent flex items-center justify-between gap-2 text-sm disabled:opacity-50"
+                          className="w-full text-left px-3 py-2.5 rounded-md hover:bg-white/5 flex items-center justify-between gap-3 text-sm disabled:opacity-50 transition-colors border border-transparent hover:border-white/10 group"
                           disabled={connectMutation.isPending}
                           onClick={() => connectMutation.mutate(repo.fullName)}
                         >
-                          <span className="flex items-center gap-2 min-w-0">
+                          <span className="flex items-center gap-3 min-w-0">
                             {repo.private ? (
-                              <Lock className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                              <Lock className="w-3.5 h-3.5 shrink-0 text-amber-500/70" />
                             ) : (
-                              <Globe className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                              <Globe className="w-3.5 h-3.5 shrink-0 text-blue-400/70" />
                             )}
-                            <span className="truncate">{repo.fullName}</span>
+                            <div className="flex flex-col truncate">
+                              <span className="truncate font-medium text-slate-200 group-hover:text-white">{repo.fullName}</span>
+                              {repo.description && (
+                                <span className="text-[11px] text-slate-500 truncate">{repo.description}</span>
+                              )}
+                            </div>
                           </span>
+                          <Plus className="w-4 h-4 shrink-0 text-slate-600 group-hover:text-blue-400 transition-colors" />
                         </button>
                       ))}
-                      {(githubReposQuery.data?.repos ?? []).length === 0 && (
-                        <p className="text-sm text-muted-foreground text-center py-6">
-                          No encontramos repositorios en tu cuenta.
+                      {githubReposQuery.data?.repos && 
+                       githubReposQuery.data.repos.filter(repo => 
+                         repo.fullName.toLowerCase().includes(searchQuery.toLowerCase())
+                       ).length === 0 && (
+                        <p className="text-sm text-slate-500 text-center py-8">
+                          {searchQuery ? "No se encontraron repositorios que coincidan." : "No encontramos repositorios en tu cuenta."}
                         </p>
                       )}
                     </div>
