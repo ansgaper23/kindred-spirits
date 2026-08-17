@@ -5,6 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useServerFn } from "@tanstack/react-start";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { processAgentMessage } from "@/lib/agent/gemini.functions";
 import { approveAndApplyEdit } from "@/lib/agent/edits.functions";
 import { cn } from "@/lib/utils";
@@ -35,6 +42,7 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [applyingEditId, setApplyingEditId] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState("gemini-1.5-flash");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const processMessage = useServerFn(processAgentMessage);
@@ -63,6 +71,7 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
           conversationId,
           message: input,
           repositoryId,
+          model: selectedModel,
         },
       });
 
@@ -152,6 +161,20 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
               Neural engine active
             </span>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Select value={selectedModel} onValueChange={setSelectedModel} disabled={isProcessing}>
+            <SelectTrigger className="w-[160px] h-8 text-[10px] bg-slate-900/50 border-white/10 text-slate-300 font-mono uppercase tracking-wider focus:ring-cyan-500/20">
+              <SelectValue placeholder="Model" />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-900 border-white/10 text-slate-300">
+              <SelectItem value="gemini-1.5-flash" className="text-[10px] uppercase font-mono">Gemini 1.5 Flash</SelectItem>
+              <SelectItem value="gemini-1.5-pro" className="text-[10px] uppercase font-mono">Gemini 1.5 Pro</SelectItem>
+              <SelectItem value="gemini-2.0-flash" className="text-[10px] uppercase font-mono">Gemini 2.0 Flash</SelectItem>
+              <SelectItem value="gemini-2.0-pro-exp-02-05" className="text-[10px] uppercase font-mono">Gemini 2.0 Pro Exp</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -331,7 +354,7 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
           </Button>
         </form>
         <p className="text-[10px] text-center text-muted-foreground mt-3 uppercase tracking-widest font-medium opacity-60">
-          Powered by Gemini • Reads and writes your repo via the GitHub API
+          Powered by Gemini ({selectedModel}) • Reads and writes your repo via the GitHub API
         </p>
       </div>
     </div>
