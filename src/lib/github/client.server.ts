@@ -38,7 +38,7 @@ async function githubRequest<T>(path: string, opts: RequestOptions = {}): Promis
   const res = await fetch(`${GITHUB_API}${path}`, {
     method: opts.method ?? "GET",
     headers,
-    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+    body: opts.body !== undefined ? JSON.stringify(opts.body) : null,
   });
 
   if (!res.ok) {
