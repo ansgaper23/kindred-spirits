@@ -20,8 +20,8 @@ interface ProposedEdit {
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
-  thought?: string;
-  proposedEdits?: ProposedEdit[];
+  thought?: string | undefined;
+  proposedEdits?: ProposedEdit[] | undefined;
 }
 
 export function ChatInterface({ repositoryId }: { repositoryId: string }) {
@@ -108,7 +108,7 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
           ...msg,
           proposedEdits: msg.proposedEdits?.map(edit => 
             edit.id === editId ? { ...edit, status: 'applied' } : edit
-          )
+          ) || undefined
         })));
       }
     } catch (error) {
