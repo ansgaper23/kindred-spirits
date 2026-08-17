@@ -250,22 +250,22 @@ export const processAgentMessage = createServerFn({ method: "POST" })
         };
 
         try {
-          // Attempt with 'models/' prefix first, as it is standard for v1beta endpoints.
-          const prefixedName = modelName.startsWith("models/") ? modelName : `models/${modelName}`;
-          response = await makeRequest(prefixedName);
+          // Attempt without 'models/' prefix first, as it's the more consistent behavior for v1beta calls in some environments.
+          const plainName = modelName.replace("models/", "");
+          response = await makeRequest(plainName);
         } catch (firstErr: any) {
           const msg = firstErr?.message || "";
           console.log(`[Agent] First attempt failed for ${modelName}: ${msg}`);
           
           if (msg.includes("not found")) {
-            // If prefixed failed, try the plain name
-            const plainName = modelName.replace("models/", "");
-            console.log(`[Agent] Retrying with plain model name: ${plainName}`);
-            response = await makeRequest(plainName);
+            // If plain failed, try with prefix
+            const prefixedName = modelName.startsWith("models/") ? modelName : `models/${modelName}`;
+            console.log(`[Agent] Retrying with prefixed model name: ${prefixedName}`);
+            response = await makeRequest(prefixedName);
           } else if (msg.includes("gemini-3.6-flash") || msg.includes("no longer available")) {
             // Fallback to flash if specific model is discontinued
             console.log(`[Agent] Model discontinued. Retrying with gemini-1.5-flash...`);
-            response = await makeRequest("models/gemini-1.5-flash");
+            response = await makeRequest("gemini-1.5-flash");
           } else {
             throw firstErr;
           }
