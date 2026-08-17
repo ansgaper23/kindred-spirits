@@ -26,7 +26,7 @@ interface RequestOptions {
   headers?: Record<string, string>;
 }
 
-async function githubRequest<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+async function githubRequest<T>(path: string, opts: RequestOptions = {}, retries = 2): Promise<T> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
@@ -35,21 +35,35 @@ async function githubRequest<T>(path: string, opts: RequestOptions = {}): Promis
   };
   if (opts.token) headers["Authorization"] = `Bearer ${opts.token}`;
 
-  const res = await fetch(`${GITHUB_API}${path}`, {
-    method: opts.method ?? "GET",
-    headers,
-    body: opts.body !== undefined ? JSON.stringify(opts.body) : null,
-  });
+  try {
+    const res = await fetch(`${GITHUB_API}${path}`, {
+      method: opts.method ?? "GET",
+      headers,
+      body: opts.body !== undefined ? JSON.stringify(opts.body) : null,
+    });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new GithubApiError(
-      res.status,
-      `GitHub API ${opts.method ?? "GET"} ${path} failed (${res.status}): ${text.slice(0, 500)}`,
-    );
+    if (res.status === 429 || (res.status >= 500 && retries > 0)) {
+      const retryAfter = parseInt(res.headers.get("Retry-After") || "1");
+      await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
+      return githubRequest(path, opts, retries - 1);
+    }
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new GithubApiError(
+        res.status,
+        `GitHub API ${opts.method ?? "GET"} ${path} failed (${res.status}): ${text.slice(0, 500)}`,
+      );
+    }
+    if (res.status === 204) return undefined as T;
+    return (await res.json()) as T;
+  } catch (err) {
+    if (retries > 0 && !(err instanceof GithubApiError)) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      return githubRequest(path, opts, retries - 1);
+    }
+    throw err;
   }
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
 }
 
 // Buffer isn't guaranteed on every deploy target (e.g. Cloudflare Workers

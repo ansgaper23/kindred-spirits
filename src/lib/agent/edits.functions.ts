@@ -70,7 +70,9 @@ export const approveAndApplyEdit = createServerFn({ method: "POST" })
       .select("github_access_token")
       .eq("id", context.userId)
       .maybeSingle();
-    const token = profile?.github_access_token;
+    
+    const { decryptSafe } = await import("@/lib/crypto.server");
+    const token = decryptSafe(profile?.github_access_token ?? null);
     if (!token) {
       return {
         success: false as const,

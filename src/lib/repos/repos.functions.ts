@@ -43,8 +43,11 @@ export const listGithubRepos = createServerFn({ method: "GET" })
       .select("github_access_token, github_username")
       .eq("id", context.userId)
       .maybeSingle();
+    
+    const { decryptSafe } = await import("@/lib/crypto.server");
+    const githubToken = decryptSafe(profile?.github_access_token ?? null);
 
-    if (!profile?.github_access_token) {
+    if (!githubToken) {
       return { connected: false as const, repos: [], username: null };
     }
 
@@ -77,16 +80,18 @@ export const connectRepository = createServerFn({ method: "POST" })
     const [owner, name] = data.fullName.split("/");
 
     const { data: profile } = await context.supabase
-      .from("profiles")
       .select("github_access_token")
       .eq("id", context.userId)
       .maybeSingle();
+
+    const { decryptSafe } = await import("@/lib/crypto.server");
+    const githubToken = decryptSafe(profile?.github_access_token ?? null);
 
     const { getRepo, GithubApiError } = await import("@/lib/github/client.server");
 
     let repo;
     try {
-      repo = await getRepo(owner!, name!, profile?.github_access_token ?? null);
+      repo = await getRepo(owner!, name!, githubToken);
     } catch (err) {
       if (err instanceof GithubApiError && err.status === 404) {
         throw new Error("No se encontró ese repositorio (¿es privado? conecta GitHub para verlo).");

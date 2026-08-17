@@ -58,7 +58,9 @@ export const processAgentMessage = createServerFn({ method: "POST" })
       .select("github_access_token")
       .eq("id", context.userId)
       .maybeSingle();
-    const githubToken = profile?.github_access_token ?? null;
+    
+    const { decryptSafe } = await import("@/lib/crypto.server");
+    const githubToken = decryptSafe(profile?.github_access_token ?? null);
 
     // Resolve (or create) the conversation this message belongs to.
     let conversationId = data.conversationId ?? null;
