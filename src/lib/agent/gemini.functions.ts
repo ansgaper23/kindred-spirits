@@ -233,7 +233,7 @@ export const processAgentMessage = createServerFn({ method: "POST" })
         // or just passing the name to generateContent.
         
         const modelRequest = {
-          model: modelName.startsWith("models/") ? modelName : `models/${modelName}`,
+          model: modelName,
           contents,
           systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
           tools: tools?.[0]?.functionDeclarations ? [
