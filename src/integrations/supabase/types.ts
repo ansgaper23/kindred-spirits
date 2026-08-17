@@ -96,6 +96,8 @@ export type Database = {
           created_at: string
           email: string
           full_name: string | null
+          github_access_token: string | null
+          github_username: string | null
           id: string
           updated_at: string
         }
@@ -104,6 +106,8 @@ export type Database = {
           created_at?: string
           email: string
           full_name?: string | null
+          github_access_token?: string | null
+          github_username?: string | null
           id: string
           updated_at?: string
         }
@@ -112,6 +116,8 @@ export type Database = {
           created_at?: string
           email?: string
           full_name?: string | null
+          github_access_token?: string | null
+          github_username?: string | null
           id?: string
           updated_at?: string
         }
@@ -125,6 +131,7 @@ export type Database = {
           file_path: string
           id: string
           message_id: string
+          new_content: string | null
           status: string | null
         }
         Insert: {
@@ -134,6 +141,7 @@ export type Database = {
           file_path: string
           id?: string
           message_id: string
+          new_content?: string | null
           status?: string | null
         }
         Update: {
@@ -143,6 +151,7 @@ export type Database = {
           file_path?: string
           id?: string
           message_id?: string
+          new_content?: string | null
           status?: string | null
         }
         Relationships: [
@@ -158,8 +167,10 @@ export type Database = {
       repositories: {
         Row: {
           created_at: string
+          default_branch: string
           description: string | null
           full_name: string
+          html_url: string | null
           id: string
           installation_id: string | null
           name: string
@@ -169,8 +180,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          default_branch?: string
           description?: string | null
           full_name: string
+          html_url?: string | null
           id?: string
           installation_id?: string | null
           name: string
@@ -180,8 +193,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          default_branch?: string
           description?: string | null
           full_name?: string
+          html_url?: string | null
           id?: string
           installation_id?: string | null
           name?: string
