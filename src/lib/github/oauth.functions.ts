@@ -7,8 +7,12 @@ function callbackUrl(): string {
   const request = getRequest();
   if (!request) throw new Error("El flujo OAuth debe iniciarse desde la app.");
   const url = new URL(request.url);
-  const forwarded = url.hostname === "localhost" ? request.headers.get("x-forwarded-host") : null;
-  const origin = forwarded ? `https://${forwarded}` : url.origin;
+  
+  // En Lovable, el host puede variar entre preview y producción.
+  // GitHub requiere que el redirect_uri coincida EXACTAMENTE con el registrado.
+  // Forzamos el uso del hostname actual para asegurar consistencia.
+  const origin = `${url.protocol}//${url.hostname}`;
+    
   return new URL("/oauth/github/callback", origin).toString();
 }
 
