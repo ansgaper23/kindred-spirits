@@ -18,21 +18,43 @@ export const ensureProfile = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    const { data: profile, error } = await context.supabase
+    // Use a more resilient pattern for RLS: check if exists, then insert or update.
+    // Upsert sometimes triggers "new row violates RLS" in Supabase if the insert 
+    // part of the upsert is evaluated against existing rows differently.
+    const { data: existingProfile } = await context.supabase
       .from("profiles")
-      .upsert(
-        {
+      .select("id")
+      .eq("id", context.userId)
+      .maybeSingle();
+
+    let result;
+    if (existingProfile) {
+      result = await context.supabase
+        .from("profiles")
+        .update({
+          email: data.email,
+          full_name: data.fullName ?? null,
+          avatar_url: data.avatarUrl ?? null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", context.userId)
+        .select("id, email, full_name, avatar_url, github_username")
+        .single();
+    } else {
+      result = await context.supabase
+        .from("profiles")
+        .insert({
           id: context.userId,
           email: data.email,
           full_name: data.fullName ?? null,
           avatar_url: data.avatarUrl ?? null,
           updated_at: new Date().toISOString(),
-        },
-        { onConflict: "id" },
-      )
-      .select("id, email, full_name, avatar_url, github_username")
-      .single();
+        })
+        .select("id, email, full_name, avatar_url, github_username")
+        .single();
+    }
 
+    const { data: profile, error } = result;
     if (error) throw new Error(error.message);
 
     const { data: tokenRow } = await context.supabase
