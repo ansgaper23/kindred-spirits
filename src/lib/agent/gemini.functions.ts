@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 // Type-only import: erased at compile time, so this doesn't pull @google/genai
 // into the client bundle — the real (runtime) import happens dynamically below.
-import type { Content } from "@google/genai";
+import type { Content, Part } from "@google/genai";
 
 const MAX_TOOL_ITERATIONS = 6;
 const MAX_FILE_CHARS = 12_000;
@@ -26,9 +26,6 @@ interface ProposedEditOut {
  * model explore (list_files / read_file / search_code), and stops either on
  * a plain-text answer or on one-or-more propose_edit calls — which are
  * turned into real unified diffs and persisted as pending approvals.
- *
- * Requires the GEMINI_API_KEY environment variable. Without it, this
- * function fails clearly instead of pretending to work.
  */
 export const processAgentMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -117,7 +114,7 @@ export const processAgentMessage = createServerFn({ method: "POST" })
               description:
                 "List files and folders at a path in the repository (empty path = repo root).",
               parameters: {
-                type: "OBJECT",
+                type: "OBJECT" as any,
                 properties: {
                   path: {
                     type: "STRING",
@@ -130,7 +127,7 @@ export const processAgentMessage = createServerFn({ method: "POST" })
               name: "read_file",
               description: "Read the text content of a single file in the repository.",
               parameters: {
-                type: "OBJECT",
+                type: "OBJECT" as any,
                 properties: {
                   path: { type: "STRING", description: "File path, e.g. 'src/App.tsx'." },
                 },
@@ -141,7 +138,7 @@ export const processAgentMessage = createServerFn({ method: "POST" })
               name: "search_code",
               description: "Search the repository's code for a string or symbol.",
               parameters: {
-                type: "OBJECT",
+                type: "OBJECT" as any,
                 properties: { query: { type: "STRING" } },
                 required: ["query"],
               },
@@ -151,7 +148,7 @@ export const processAgentMessage = createServerFn({ method: "POST" })
               description:
                 "Propose a change to a file for the user to review and approve. Provide the FULL new content of the file (not a diff). Call this once per file you want to change, only after you've read the file's current content.",
               parameters: {
-                type: "OBJECT",
+                type: "OBJECT" as any,
                 properties: {
                   file_path: { type: "STRING" },
                   new_content: { type: "STRING", description: "The complete new file content." },
@@ -211,16 +208,15 @@ export const processAgentMessage = createServerFn({ method: "POST" })
       }
     }
 
-    let history: Content[] = [];
-    const chat = model.startChat({ history });
+    const chat = model.startChat({ history: [] });
     const toolLog: string[] = [];
     let finalText = "";
     const editCalls: Array<{ file_path: string; new_content: string; summary: string }> = [];
 
-    let currentMessage = data.message;
-
+    // Send the first message
+    let result = await chat.sendMessage(data.message);
+    
     for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
-      const result = await chat.sendMessage(currentMessage);
       const response = result.response;
       const calls = response.functionCalls() || [];
 
@@ -229,7 +225,7 @@ export const processAgentMessage = createServerFn({ method: "POST" })
         break;
       }
 
-      const proposals = calls.filter((c) => c.name === "propose_edit");
+      const proposals = calls.filter((c: any) => c.name === "propose_edit");
       if (proposals.length > 0) {
         const summaries: string[] = [];
         for (const call of proposals) {
@@ -258,29 +254,12 @@ export const processAgentMessage = createServerFn({ method: "POST" })
         });
       }
 
-      // In the next iteration, we send the tool responses back
-      // Using chat.sendMessage(toolResponses) is the standard way for subsequent turns
-      const nextResult = await chat.sendMessage(toolResponses);
-      const nextResponse = nextResult.response;
-      const nextCalls = nextResponse.functionCalls() || [];
-      
-      if (nextCalls.length === 0) {
-        finalText = nextResponse.text();
-        break;
-      }
-      
-      // If there are more calls, we continue the loop
-      // But we need to handle the nextCalls in the next iteration
-      // This is a bit tricky with the loop structure, let's adjust
-      
-      // For simplicity in this logic, we just break if it's too deep
+      // Send tool responses back to continue the loop
+      result = await chat.sendMessage(toolResponses);
+
       if (iteration === MAX_TOOL_ITERATIONS - 1) {
         finalText = "No pude terminar de explorar el repositorio en el tiempo asignado. ¿Puedes ser más específico?";
       }
-      
-      // Set currentMessage to something that won't trigger a new user prompt but continue the conversation
-      // Actually, with the new SDK, we just continue calling sendMessage with the responses.
-      // Let's refactor slightly to handle multiple tool turns correctly.
     }
 
     // Turn each propose_edit call into a real unified diff against the
