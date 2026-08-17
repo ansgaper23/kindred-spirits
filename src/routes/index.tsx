@@ -1,119 +1,168 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { ChatInterface } from "@/components/ChatInterface";
-import { Github, FolderGit2, Plus, LogOut } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+  Github,
+  MessageSquare,
+  GitPullRequest,
+  ShieldCheck,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { useSupabaseUser } from "@/hooks/use-supabase-user";
 
 export const Route = createFileRoute("/")({
-  component: Index,
+  component: Home,
 });
 
-function Index() {
-  const [isConnected, setIsConnected] = useState(false);
-  const [selectedRepo, setSelectedRepo] = useState<{ id: string, name: string } | null>(null);
+const STEPS = [
+  {
+    icon: Github,
+    title: "Conecta tu repositorio",
+    description:
+      "Con tu cuenta de GitHub o pegando el nombre de un repo público. Nada se toca todavía.",
+  },
+  {
+    icon: MessageSquare,
+    title: "Describe el cambio",
+    description:
+      "Chatea en lenguaje natural con el agente. Explora tu código real, no inventa nada.",
+  },
+  {
+    icon: GitPullRequest,
+    title: "Revisa y aprueba",
+    description:
+      "Ves el diff exacto antes de aplicarlo. Solo al aprobar se crea la rama y el Pull Request.",
+  },
+];
 
-  // Mock data for demo
-  const mockRepos = [
-    { id: '1', name: 'my-web-app', description: 'React + Tailwind project' },
-    { id: '2', name: 'api-server', description: 'Node.js backend' },
-  ];
+const FEATURES = [
+  {
+    icon: Sparkles,
+    title: "Agente con Gemini",
+    description:
+      "Explora archivos, busca código y propone ediciones usando function calling real, no respuestas de relleno.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Tú tienes el control",
+    description:
+      "El agente nunca escribe directo a tu rama principal. Todo pasa por una rama nueva y un PR que tú apruebas.",
+  },
+  {
+    icon: GitPullRequest,
+    title: "Integración real con GitHub",
+    description:
+      "Lectura y escritura vía la API de GitHub: listar archivos, leer contenido, comitear cambios y abrir PRs.",
+  },
+];
 
-  if (!isConnected) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/20 p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Github className="w-8 h-8 text-primary" />
-            </div>
-            <CardTitle className="text-2xl">Welcome to CodeFlow</CardTitle>
-            <CardDescription>
-              Connect your GitHub account to start shipping code with AI assistance.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button className="w-full" onClick={() => setIsConnected(true)}>
-              <Github className="w-4 h-4 mr-2" />
-              Connect GitHub
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+function Home() {
+  const { user, loading } = useSupabaseUser();
+  const primaryHref = !loading && user ? "/dashboard" : "/signup";
 
   return (
-    <div className="min-h-screen bg-muted/20">
-      <header className="h-16 border-b bg-background flex items-center justify-between px-6 sticky top-0 z-10">
-        <div className="flex items-center gap-2 font-bold text-xl">
-          <div className="w-8 h-8 bg-primary rounded flex items-center justify-center text-primary-foreground">
-            CF
+    <div className="min-h-screen bg-background">
+      <header className="border-b sticky top-0 z-10 bg-background/80 backdrop-blur-sm">
+        <div className="container mx-auto flex items-center justify-between px-4 h-16">
+          <div className="flex items-center gap-2 font-bold text-xl">
+            <div className="w-8 h-8 bg-primary rounded flex items-center justify-center text-primary-foreground">
+              CF
+            </div>
+            CodeFlow
           </div>
-          CodeFlow
-        </div>
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setIsConnected(false)}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Logout
-          </Button>
+          <div className="flex items-center gap-2">
+            {!loading && user ? (
+              <Button asChild size="sm">
+                <Link to="/dashboard">Ir al dashboard</Link>
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/login">Iniciar sesión</Link>
+                </Button>
+                <Button size="sm" asChild>
+                  <Link to="/signup">Empezar gratis</Link>
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
-      <main className="container mx-auto py-8 px-4">
-        {!selectedRepo ? (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold tracking-tight">Your Repositories</h2>
-              <Button size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Connect New
-              </Button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mockRepos.map((repo) => (
-                <Card key={repo.id} className="hover:border-primary/50 transition-colors cursor-pointer group" onClick={() => setSelectedRepo(repo)}>
-                  <CardHeader>
-                    <div className="flex items-center gap-2 mb-2">
-                      <FolderGit2 className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                      <CardTitle className="text-lg">{repo.name}</CardTitle>
-                    </div>
-                    <CardDescription>{repo.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex justify-end">
-                      <Button variant="secondary" size="sm">Open</Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-6">
-            <div className="w-full max-w-2xl flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setSelectedRepo(null)}>
-                  &larr; Back
-                </Button>
-                <div className="flex items-center gap-2 font-medium">
-                  <FolderGit2 className="w-4 h-4" />
-                  {selectedRepo.name}
+      <section className="container mx-auto px-4 py-20 md:py-28 text-center">
+        <div className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs text-muted-foreground mb-6">
+          <Sparkles className="w-3 h-3" />
+          Impulsado por Gemini · function calling real
+        </div>
+        <h1 className="text-4xl md:text-6xl font-bold tracking-tight max-w-3xl mx-auto text-balance">
+          Edita tu código de GitHub conversando con IA
+        </h1>
+        <p className="mt-6 text-lg text-muted-foreground max-w-xl mx-auto text-balance">
+          Conecta un repositorio, describe el cambio que quieres y revisa el diff antes de
+          aprobarlo. Ningún cambio se aplica sin tu confirmación.
+        </p>
+        <div className="mt-8 flex items-center justify-center gap-3">
+          <Button size="lg" asChild>
+            <Link to={primaryHref}>
+              {!loading && user ? "Ir al dashboard" : "Empezar gratis"}
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Link>
+          </Button>
+          {!(!loading && user) && (
+            <Button size="lg" variant="outline" asChild>
+              <Link to="/login">Ya tengo cuenta</Link>
+            </Button>
+          )}
+        </div>
+      </section>
+
+      <section className="container mx-auto px-4 py-16 border-t">
+        <h2 className="text-2xl font-semibold text-center mb-12">Cómo funciona</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          {STEPS.map((step, i) => (
+            <Card key={step.title} className="relative">
+              <CardContent className="pt-6">
+                <div className="absolute -top-3 -left-3 w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
+                  {i + 1}
                 </div>
-              </div>
-              <div className="text-xs text-muted-foreground bg-background px-2 py-1 rounded border">
-                Branch: codeflow/main
-              </div>
+                <step.icon className="w-6 h-6 text-primary mb-3" />
+                <h3 className="font-semibold mb-1.5">{step.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section className="container mx-auto px-4 py-16 border-t">
+        <h2 className="text-2xl font-semibold text-center mb-12">Por qué CodeFlow</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          {FEATURES.map((feature) => (
+            <div key={feature.title} className="space-y-2">
+              <feature.icon className="w-6 h-6 text-primary" />
+              <h3 className="font-semibold">{feature.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
             </div>
-            
-            <ChatInterface repositoryId={selectedRepo.id} />
-            
-            <div className="w-full max-w-2xl text-center text-xs text-muted-foreground mt-4">
-              Agent operations are performed in an isolated e2b sandbox. La base de datos que sea en supabase.
-            </div>
-          </div>
-        )}
-      </main>
+          ))}
+        </div>
+      </section>
+
+      <section className="container mx-auto px-4 py-20 border-t text-center">
+        <h2 className="text-2xl md:text-3xl font-semibold mb-4">
+          Conecta tu primer repositorio en un minuto
+        </h2>
+        <Button size="lg" asChild>
+          <Link to={primaryHref}>
+            {!loading && user ? "Ir al dashboard" : "Crear cuenta gratis"}
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Link>
+        </Button>
+      </section>
+
+      <footer className="border-t py-8 text-center text-xs text-muted-foreground">
+        CodeFlow · construido con Lovable, TanStack Start y Supabase
+      </footer>
     </div>
   );
 }
