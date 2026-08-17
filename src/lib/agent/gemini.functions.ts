@@ -245,28 +245,28 @@ export const processAgentMessage = createServerFn({ method: "POST" })
               { functionDeclarations: tools[0].functionDeclarations.map(fd => ({ ...fd, parameters: fd.parameters as any })) }
             ] : tools,
           };
-          console.log(`[Agent] Sending request to Gemini with model name: ${name}`);
+          console.log(`[Agent] Sending request to Gemini with model ID: ${name}`);
           return await (genAI as any).models.generateContent(modelRequest);
         };
 
         try {
-          // Try with the prefix first as the logs show the SDK is sending 
-          // 'models/gemini-1.5-flash' but the server says it's not found 
-          // for 'v1beta' if not properly structured.
-          response = await makeRequest(modelName.startsWith("models/") ? modelName : `models/${modelName}`);
+          // In this SDK version and environment, we've seen 404s for both prefixed and plain names.
+          // The logs show that "models/gemini-1.5-flash" was NOT found, which is extremely strange.
+          // We will try plain name first, then prefixed if that fails.
+          response = await makeRequest(modelName.replace("models/", ""));
         } catch (firstErr: any) {
           const msg = firstErr?.message || "";
-          console.log(`[Agent] First attempt failed: ${msg}`);
+          console.log(`[Agent] First attempt failed for ${modelName}: ${msg}`);
           
-          if (msg.includes("not found") && !msg.includes("no longer available")) {
-            // If prefixed failed, try without it
-            const plainName = modelName.replace("models/", "");
-            console.log(`[Agent] Retrying with plain model name: ${plainName}`);
-            response = await makeRequest(plainName);
+          if (msg.includes("not found")) {
+            // Try with prefix if plain failed
+            const prefixedName = modelName.startsWith("models/") ? modelName : `models/${modelName}`;
+            console.log(`[Agent] Retrying with prefixed model name: ${prefixedName}`);
+            response = await makeRequest(prefixedName);
           } else if (msg.includes("gemini-3.6-flash") || msg.includes("no longer available")) {
             // Fallback to flash if specific model is discontinued
             console.log(`[Agent] Model discontinued. Retrying with gemini-1.5-flash...`);
-            response = await makeRequest("models/gemini-1.5-flash");
+            response = await makeRequest("gemini-1.5-flash");
           } else {
             throw firstErr;
           }
