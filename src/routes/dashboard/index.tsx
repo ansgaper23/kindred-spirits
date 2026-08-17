@@ -56,6 +56,9 @@ function DashboardHome() {
   const runDisconnectRepository = useServerFn(disconnectRepository);
   const runEnsureProfile = useServerFn(ensureProfile);
   const runDisconnectGithub = useServerFn(disconnectGithub);
+  const runStartGithubOAuth = useServerFn(startGithubOAuth);
+  const runCompleteGithubOAuth = useServerFn(completeGithubOAuth);
+
 
   const reposQuery = useQuery({
     queryKey: ["repositories"],
