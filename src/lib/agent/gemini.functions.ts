@@ -109,8 +109,11 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     
     if (modelName === "gemini-2.0-flash") modelName = "gemini-1.5-flash"; // Fallback for discontinued model
     
-    if (modelName.startsWith("models/")) {
-      modelName = modelName.replace("models/", "");
+    // Ensure the model name starts with 'models/' if it doesn't already.
+    // The error "models/X is not found for API version v1beta" actually means the SDK is sending 
+    // the request to the wrong endpoint or the model ID is not prefixed correctly.
+    if (!modelName.startsWith("models/") && !modelName.startsWith("tunedModels/")) {
+      modelName = `models/${modelName}`;
     }
 
     const systemInstruction = [
