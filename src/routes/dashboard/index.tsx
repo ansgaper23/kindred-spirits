@@ -51,6 +51,7 @@ function DashboardHome() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [manualFullName, setManualFullName] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const runListRepositories = useServerFn(listRepositories);
   const runListGithubRepos = useServerFn(listGithubRepos);
