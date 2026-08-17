@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +39,17 @@ function LoginPage() {
       return;
     }
     navigate({ to: "/dashboard" });
+  };
+
+  const handleGithubLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "github",
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+        scopes: "repo read:user workflow",
+      },
+    });
+    if (error) toast.error(error.message);
   };
 
   return (
@@ -85,6 +96,23 @@ function LoginPage() {
               Iniciar sesión
             </Button>
           </form>
+          <div className="relative py-2">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-slate-800" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-slate-900 px-2 text-slate-500 font-medium">O continúa con</span>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            className="w-full bg-slate-950/50 border-white/10 text-slate-100 hover:bg-white/5 font-bold"
+            onClick={handleGithubLogin}
+            disabled={loading}
+          >
+            <Github className="w-4 h-4 mr-2" />
+            GitHub
+          </Button>
         </CardContent>
         <CardFooter className="justify-center text-sm text-muted-foreground">
           ¿No tienes cuenta?&nbsp;

@@ -14,7 +14,7 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
-import { ensureProfile, saveGithubToken } from "@/lib/profile/profile.functions";
+import { ensureProfile } from "@/lib/profile/profile.functions";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardLayout,
@@ -24,8 +24,7 @@ function DashboardLayout() {
   const navigate = useNavigate();
   const { user, session, loading } = useSupabaseUser();
   const runEnsureProfile = useServerFn(ensureProfile);
-  const runSaveGithubToken = useServerFn(saveGithubToken);
-  const handledTokenFor = useRef<string | null>(null);
+  const handledProfileFor = useRef<string | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -33,23 +32,15 @@ function DashboardLayout() {
       navigate({ to: "/login" });
       return;
     }
-    runEnsureProfile({
-      data: {
-        email: user.email ?? "",
-        fullName: user.user_metadata?.["full_name"] ?? null,
-        avatarUrl: user.user_metadata?.["avatar_url"] ?? null,
-      },
-    }).catch((err) => console.error("ensureProfile failed:", err));
-
-    // A GitHub OAuth login exposes the provider token once, right after the
-    // redirect. Persist it so later actions (listing/applying repo changes)
-    // can use it without asking the user to paste anything.
-    const providerToken = session?.provider_token ?? undefined;
-    if (providerToken && handledTokenFor.current !== user.id) {
-      handledTokenFor.current = user.id;
-      runSaveGithubToken({ data: { providerToken } }).catch((err) =>
-        console.error("saveGithubToken failed:", err),
-      );
+    if (handledProfileFor.current !== user.id) {
+      handledProfileFor.current = user.id;
+      runEnsureProfile({
+        data: {
+          email: user.email ?? "",
+          fullName: user.user_metadata?.["full_name"] ?? null,
+          avatarUrl: user.user_metadata?.["avatar_url"] ?? null,
+        },
+      }).catch((err) => console.error("ensureProfile failed:", err));
     }
   }, [loading, user, session]);
 
