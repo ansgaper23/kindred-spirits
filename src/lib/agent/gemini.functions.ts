@@ -317,3 +317,11 @@ export const processAgentMessage = createServerFn({ method: "POST" })
       conversationId,
     };
   });
+
+export const checkAgentConfig = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    return {
+      geminiConfigured: Boolean(process.env["GEMINI_API_KEY"]),
+    };
+  });
