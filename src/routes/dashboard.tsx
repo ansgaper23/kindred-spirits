@@ -40,6 +40,10 @@ function DashboardLayout() {
           fullName: user.user_metadata?.["full_name"] ?? null,
           avatarUrl: user.user_metadata?.["avatar_url"] ?? null,
         },
+      }).then((res) => {
+        // Force refresh all queries that depend on profile status
+        queryClient.invalidateQueries({ queryKey: ["github-repos"] });
+        queryClient.invalidateQueries({ queryKey: ["profile"] });
       }).catch((err) => console.error("ensureProfile failed:", err));
     }
   }, [loading, user, session]);
