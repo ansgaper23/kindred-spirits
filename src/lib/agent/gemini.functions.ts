@@ -95,7 +95,7 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     const { createTwoFilesPatch } = await import("diff");
 
     const ai = new GoogleGenAI({ apiKey });
-    const model = process.env["GEMINI_MODEL"] || "gemini-2.5-pro";
+    const model = process.env["GEMINI_MODEL"] || "gemini-1.5-pro";
 
     const tools = [
       {
