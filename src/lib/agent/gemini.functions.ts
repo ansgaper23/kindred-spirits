@@ -253,11 +253,21 @@ export const processAgentMessage = createServerFn({ method: "POST" })
           const msg = firstErr?.message || "";
           console.log(`[Agent] First attempt failed for ${modelName}: ${msg}`);
           
-          if (msg.includes("not found")) {
+          if (msg.includes("not found") || msg.includes("NOT_FOUND")) {
             // If prefixed failed, try the plain name
             const plainName = modelName.replace("models/", "");
             console.log(`[Agent] Retrying with plain model name: ${plainName}`);
-            response = await makeRequest(plainName);
+            try {
+              response = await makeRequest(plainName);
+            } catch (secondErr: any) {
+              const secondMsg = secondErr?.message || "";
+              if (secondMsg.includes("not found") || secondMsg.includes("NOT_FOUND")) {
+                console.log(`[Agent] Plain name also failed. Falling back to gemini-1.5-flash...`);
+                response = await makeRequest("models/gemini-1.5-flash");
+              } else {
+                throw secondErr;
+              }
+            }
           } else if (msg.includes("gemini-3.6-flash") || msg.includes("no longer available")) {
             // Fallback to flash if specific model is discontinued
             console.log(`[Agent] Model discontinued. Retrying with gemini-1.5-flash...`);
