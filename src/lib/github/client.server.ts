@@ -38,7 +38,7 @@ async function githubRequest<T>(path: string, opts: RequestOptions = {}): Promis
   const res = await fetch(`${GITHUB_API}${path}`, {
     method: opts.method ?? "GET",
     headers,
-    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+    body: opts.body !== undefined ? JSON.stringify(opts.body) : null,
   });
 
   if (!res.ok) {
@@ -116,7 +116,7 @@ export async function getRepo(
 ): Promise<RepoSummary> {
   const data = await githubRequest<GithubRepoJson>(
     `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`,
-    { token },
+    { token: token ?? null },
   );
   return toRepoSummary(data);
 }
@@ -155,7 +155,7 @@ export async function listDirectory(
   const suffix = path ? `/${encodePath(path)}` : "";
   const data = await githubRequest<GithubContentJson | GithubContentJson[]>(
     `/repos/${owner}/${name}/contents${suffix}?ref=${encodeURIComponent(ref)}`,
-    { token },
+    { token: token ?? null },
   );
   const items = Array.isArray(data) ? data : [data];
   return items.map((i) => ({ path: i.path, type: i.type, size: i.size ?? 0 }));
@@ -175,7 +175,7 @@ export async function getFileContent(
 ): Promise<FileContent> {
   const data = await githubRequest<GithubContentJson | GithubContentJson[]>(
     `/repos/${owner}/${name}/contents/${encodePath(path)}?ref=${encodeURIComponent(ref)}`,
-    { token },
+    { token: token ?? null },
   );
   if (Array.isArray(data)) throw new Error(`"${path}" is a directory, not a file`);
   if (data.encoding !== "base64" || typeof data.content !== "string") {
@@ -218,7 +218,7 @@ export async function searchCode(
   try {
     const data = await githubRequest<GithubSearchCodeJson>(
       `/search/code?q=${encodeURIComponent(query)}+repo:${owner}/${name}&per_page=15`,
-      { token },
+      { token: token ?? null },
     );
     return (data.items ?? []).map((i) => ({ path: i.path }));
   } catch {
