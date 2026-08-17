@@ -219,14 +219,12 @@ export const processAgentMessage = createServerFn({ method: "POST" })
       let response;
       try {
         // Correct usage for this SDK version: models.generateContent(request)
-        response = await genAI.models.generateContent({
+        response = await (genAI as any).models.generateContent({
           model: modelName,
-          config: { 
-          systemInstruction: { role: "system", parts: [{ text: systemInstruction }] } as any,
-          tools: tools as any,
-        } as any,
-        contents,
-      });
+          contents,
+          systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
+          tools,
+        });
         console.log(`[Agent] Iteration ${iteration} response received.`);
       } catch (err) {
         console.error(`[Agent] Iteration ${iteration} failed:`, err);
