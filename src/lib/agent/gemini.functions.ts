@@ -97,7 +97,7 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     const { GoogleGenAI } = await import("@google/genai");
     const { createTwoFilesPatch } = await import("diff");
 
-    const ai = new GoogleGenAI(apiKey);
+    const ai = new GoogleGenAI(apiKey as any);
     const model = data.model || process.env["GEMINI_MODEL"] || "gemini-1.5-flash";
 
     const tools = [
