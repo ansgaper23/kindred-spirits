@@ -2,7 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { FolderGit2, Github, Loader2, Plus, Trash2, Lock, Globe } from "lucide-react";
+import {
+  FolderGit2,
+  Loader2,
+  Plus,
+  Trash2,
+  Lock,
+  Globe,
+  CheckCircle2,
+  KeyRound,
+  ExternalLink,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +34,7 @@ import {
   connectRepository,
   disconnectRepository,
 } from "@/lib/repos/repos.functions";
+import { saveGithubToken, disconnectGithub } from "@/lib/profile/profile.functions";
 
 export const Route = createFileRoute("/dashboard/")({
   component: DashboardHome,
@@ -33,11 +44,14 @@ function DashboardHome() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [manualFullName, setManualFullName] = useState("");
+  const [tokenInput, setTokenInput] = useState("");
 
   const runListRepositories = useServerFn(listRepositories);
   const runListGithubRepos = useServerFn(listGithubRepos);
   const runConnectRepository = useServerFn(connectRepository);
   const runDisconnectRepository = useServerFn(disconnectRepository);
+  const runSaveGithubToken = useServerFn(saveGithubToken);
+  const runDisconnectGithub = useServerFn(disconnectGithub);
 
   const reposQuery = useQuery({
     queryKey: ["repositories"],
@@ -71,28 +85,45 @@ function DashboardHome() {
     onError: () => toast.error("No se pudo desconectar el repositorio."),
   });
 
+  const saveTokenMutation = useMutation({
+    mutationFn: (providerToken: string) => runSaveGithubToken({ data: { providerToken } }),
+    onSuccess: (result) => {
+      toast.success(`Conectado como @${result.githubUsername}.`);
+      setTokenInput("");
+      queryClient.invalidateQueries({ queryKey: ["github-repos"] });
+    },
+    onError: (err: unknown) =>
+      toast.error(err instanceof Error ? err.message : "No se pudo guardar el token."),
+  });
+
+  const disconnectGithubMutation = useMutation({
+    mutationFn: () => runDisconnectGithub(),
+    onSuccess: () => {
+      toast.success("Cuenta de GitHub desconectada.");
+      queryClient.invalidateQueries({ queryKey: ["github-repos"] });
+    },
+    onError: () => toast.error("No se pudo desconectar GitHub."),
+  });
+
   const repos = reposQuery.data?.repositories ?? [];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight text-white">Tus repositorios</h2>
-          <p className="text-sm text-slate-400 mt-1">
+          <h2 className="text-2xl font-semibold tracking-tight">Tus repositorios</h2>
+          <p className="text-sm text-muted-foreground mt-1">
             Conecta un repositorio para empezar a chatear con el agente.
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button 
-              size="sm"
-              className="border-0 bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_0_20px_-4px_rgba(34,211,238,0.7)] hover:from-cyan-400 hover:to-blue-500"
-            >
+            <Button size="sm">
               <Plus className="w-4 h-4 mr-2" />
               Conectar
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-slate-100">
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Conectar un repositorio</DialogTitle>
               <DialogDescription>
@@ -100,9 +131,9 @@ function DashboardHome() {
               </DialogDescription>
             </DialogHeader>
             <Tabs defaultValue={githubReposQuery.data?.connected ? "github" : "manual"}>
-              <TabsList className="grid w-full grid-cols-2 bg-slate-950/50 border border-white/10 p-1 rounded-xl">
-                <TabsTrigger value="github" className="rounded-lg data-[state=active]:bg-cyan-500/10 data-[state=active]:text-cyan-400">Tu GitHub</TabsTrigger>
-                <TabsTrigger value="manual" className="rounded-lg data-[state=active]:bg-cyan-500/10 data-[state=active]:text-cyan-400">Repo público</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="github">Tu GitHub</TabsTrigger>
+                <TabsTrigger value="manual">Repo público</TabsTrigger>
               </TabsList>
               <TabsContent value="github" className="space-y-3 pt-2">
                 {githubReposQuery.isLoading ? (
@@ -110,38 +141,88 @@ function DashboardHome() {
                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : !githubReposQuery.data?.connected ? (
-                  <div className="text-sm text-muted-foreground text-center py-6 space-y-2">
-                    <Github className="w-6 h-6 mx-auto opacity-60" />
-                    <p>Aún no conectaste tu cuenta de GitHub.</p>
-                    <p className="text-xs">
-                      Cierra sesión y vuelve a entrar con el botón "Continuar con GitHub", o usa la
-                      pestaña de repo público.
-                    </p>
+                  <div className="space-y-3">
+                    <div className="text-sm text-muted-foreground text-center py-2 space-y-1">
+                      <KeyRound className="w-6 h-6 mx-auto opacity-60 mb-1" />
+                      <p>Conecta tu cuenta pegando un token de acceso personal de GitHub.</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="ghToken">Personal Access Token</Label>
+                      <Input
+                        id="ghToken"
+                        type="password"
+                        placeholder="ghp_..."
+                        autoComplete="off"
+                        value={tokenInput}
+                        onChange={(e) => setTokenInput(e.target.value)}
+                      />
+                      <a
+                        href="https://github.com/settings/tokens/new?description=CodeFlow&scopes=repo"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                      >
+                        Crear un token con permiso "repo" en GitHub
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                    <Button
+                      className="w-full"
+                      disabled={!tokenInput.trim() || saveTokenMutation.isPending}
+                      onClick={() => saveTokenMutation.mutate(tokenInput.trim())}
+                    >
+                      {saveTokenMutation.isPending && (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      )}
+                      Conectar GitHub
+                    </Button>
                   </div>
                 ) : (
-                  <div className="max-h-72 overflow-y-auto space-y-1">
-                    {(githubReposQuery.data?.repos ?? []).map((repo) => (
-                      <button
-                        key={repo.fullName}
-                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-cyan-500/10 hover:text-cyan-300 transition-colors flex items-center justify-between gap-2 text-sm disabled:opacity-50 group/item"
-                        disabled={connectMutation.isPending}
-                        onClick={() => connectMutation.mutate(repo.fullName)}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                      <span className="flex items-center gap-2 text-muted-foreground">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        Conectado
+                        {githubReposQuery.data?.username && (
+                          <span className="font-medium text-foreground">
+                            @{githubReposQuery.data.username}
+                          </span>
+                        )}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-muted-foreground hover:text-destructive"
+                        disabled={disconnectGithubMutation.isPending}
+                        onClick={() => disconnectGithubMutation.mutate()}
                       >
-                        <span className="flex items-center gap-2 min-w-0">
-                          {repo.private ? (
-                            <Lock className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
-                          ) : (
-                            <Globe className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
-                          )}
-                          <span className="truncate">{repo.fullName}</span>
-                        </span>
-                      </button>
-                    ))}
-                    {(githubReposQuery.data?.repos ?? []).length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-6">
-                        No encontramos repositorios en tu cuenta.
-                      </p>
-                    )}
+                        Desconectar
+                      </Button>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto space-y-1">
+                      {(githubReposQuery.data?.repos ?? []).map((repo) => (
+                        <button
+                          key={repo.fullName}
+                          className="w-full text-left px-3 py-2 rounded-md hover:bg-accent flex items-center justify-between gap-2 text-sm disabled:opacity-50"
+                          disabled={connectMutation.isPending}
+                          onClick={() => connectMutation.mutate(repo.fullName)}
+                        >
+                          <span className="flex items-center gap-2 min-w-0">
+                            {repo.private ? (
+                              <Lock className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                            ) : (
+                              <Globe className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                            )}
+                            <span className="truncate">{repo.fullName}</span>
+                          </span>
+                        </button>
+                      ))}
+                      {(githubReposQuery.data?.repos ?? []).length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-6">
+                          No encontramos repositorios en tu cuenta.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
               </TabsContent>
@@ -153,7 +234,6 @@ function DashboardHome() {
                     placeholder="ej. facebook/react"
                     value={manualFullName}
                     onChange={(e) => setManualFullName(e.target.value)}
-                    className="bg-slate-950/50 border-white/10 focus:border-cyan-500/50 text-slate-100"
                   />
                   <p className="text-xs text-muted-foreground">
                     Solo repos públicos, salvo que hayas conectado tu cuenta de GitHub.
@@ -161,7 +241,7 @@ function DashboardHome() {
                 </div>
                 <DialogFooter>
                   <Button
-                    className="w-full border-0 bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg hover:from-cyan-400 hover:to-blue-500"
+                    className="w-full"
                     disabled={!manualFullName.trim() || connectMutation.isPending}
                     onClick={() => connectMutation.mutate(manualFullName.trim())}
                   >
@@ -180,20 +260,14 @@ function DashboardHome() {
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
       ) : repos.length === 0 ? (
-        <Card className="py-16 bg-slate-900/40 border-white/10 backdrop-blur-sm shadow-[0_0_40px_-15px_rgba(34,211,238,0.2)]">
+        <Card className="py-16">
           <CardContent className="flex flex-col items-center text-center gap-3">
-            <div className="w-16 h-16 rounded-full bg-cyan-500/10 flex items-center justify-center mb-2">
-              <FolderGit2 className="w-8 h-8 text-cyan-400" />
-            </div>
-            <p className="font-medium text-slate-100 text-lg">Todavía no conectaste ningún repositorio</p>
-            <p className="text-sm text-slate-400 max-w-sm mb-4">
+            <FolderGit2 className="w-10 h-10 text-muted-foreground/50" />
+            <p className="font-medium">Todavía no conectaste ningún repositorio</p>
+            <p className="text-sm text-muted-foreground max-w-sm">
               Conecta uno para empezar a describirle cambios en lenguaje natural al agente.
             </p>
-            <Button 
-              size="lg" 
-              onClick={() => setDialogOpen(true)}
-              className="border-0 bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_0_20px_-4px_rgba(34,211,238,0.7)] hover:from-cyan-400 hover:to-blue-500"
-            >
+            <Button size="sm" onClick={() => setDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Conectar repositorio
             </Button>
@@ -204,7 +278,7 @@ function DashboardHome() {
           {repos.map((repo) => (
             <Card
               key={repo.id}
-              className="bg-slate-900/40 border-white/10 backdrop-blur-sm hover:border-cyan-400/50 hover:bg-slate-900/60 transition-all group relative shadow-[0_4px_20px_-10px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_-10px_rgba(34,211,238,0.4)]"
+              className="hover:border-primary/50 transition-colors group relative"
             >
               <Link
                 to="/dashboard/$repositoryId"
@@ -213,25 +287,23 @@ function DashboardHome() {
               >
                 <CardHeader>
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center group-hover:bg-cyan-500/20 transition-colors">
-                      <FolderGit2 className="w-4 h-4 text-cyan-400" />
-                    </div>
-                    <CardTitle className="text-lg truncate text-slate-100">{repo.name}</CardTitle>
+                    <FolderGit2 className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <CardTitle className="text-lg truncate">{repo.name}</CardTitle>
                   </div>
-                  <CardDescription className="line-clamp-2 min-h-10 text-slate-400">
+                  <CardDescription className="line-clamp-2 min-h-10">
                     {repo.description || "Sin descripción"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <span className="text-xs text-slate-500 font-mono">
-                    {repo.owner}/{repo.name} · {repo.default_branch}
+                  <span className="text-xs text-muted-foreground">
+                    {repo.owner}/{repo.name} · rama {repo.default_branch}
                   </span>
                 </CardContent>
               </Link>
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-3 right-3 h-7 w-7 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10"
+                className="absolute top-3 right-3 h-7 w-7 text-muted-foreground hover:text-destructive"
                 disabled={disconnectMutation.isPending}
                 onClick={(e) => {
                   e.preventDefault();
