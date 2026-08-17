@@ -238,7 +238,6 @@ export const processAgentMessage = createServerFn({ method: "POST" })
       let response;
       try {
         // We use the direct models.generateContent call.
-        // The SDK handles appending 'models/' internally.
         
         const modelRequest = {
           model: modelName,
@@ -248,6 +247,8 @@ export const processAgentMessage = createServerFn({ method: "POST" })
             { functionDeclarations: tools[0].functionDeclarations.map(fd => ({ ...fd, parameters: fd.parameters as any })) }
           ] : tools,
         };
+        
+        console.log(`[Agent] Sending request to Gemini:`, JSON.stringify({ ...modelRequest, contents: '...' }));
         
         response = await (genAI as any).models.generateContent(modelRequest);
         console.log(`[Agent] Iteration ${iteration} response received.`);
