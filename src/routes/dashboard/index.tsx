@@ -122,7 +122,7 @@ function DashboardHome() {
           Dashboard
         </h2>
         <p className="text-sm text-slate-400">
-          Conecta tu cuenta de GitHub y habla con el agente de IA.
+          Conecta tu cuenta de GitHub (OAuth) y habla con el agente de IA.
         </p>
       </div>
 
@@ -131,7 +131,7 @@ function DashboardHome() {
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-3">
               <Github className="w-6 h-6 text-slate-100" />
-              <h3 className="text-lg font-bold text-slate-100">Conexión con GitHub</h3>
+              <h3 className="text-lg font-bold text-slate-100">GitHub OAuth App</h3>
             </div>
             {githubReposQuery.data?.connected ? (
               <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400 uppercase tracking-widest w-fit">
@@ -192,7 +192,7 @@ function DashboardHome() {
             <DialogHeader>
               <DialogTitle>Conectar un repositorio</DialogTitle>
               <DialogDescription>
-                Elige uno de tu cuenta de GitHub o pega el nombre de un repo público.
+                Elige uno de tu cuenta de GitHub (vía OAuth App) o pega el nombre de un repo público.
               </DialogDescription>
             </DialogHeader>
             <Tabs defaultValue={githubReposQuery.data?.connected ? "github" : "manual"}>
@@ -209,7 +209,7 @@ function DashboardHome() {
                    <div className="space-y-4 py-4">
                     <div className="text-sm text-muted-foreground text-center space-y-2">
                       <Github className="w-8 h-8 mx-auto opacity-60 mb-1" />
-                      <p>Para ver tus repositorios privados y colaborar, conecta tu cuenta de GitHub.</p>
+                      <p>Conecta tu cuenta mediante la aplicación oficial de GitHub para acceder a tus repositorios.</p>
                     </div>
                     <Button
                       className="w-full bg-blue-600 hover:bg-blue-500"
@@ -281,7 +281,7 @@ function DashboardHome() {
                     onChange={(e) => setManualFullName(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Solo repos públicos, salvo que hayas conectado tu cuenta de GitHub.
+                    Solo repos públicos, salvo que hayas autorizado la GitHub OAuth App.
                   </p>
                 </div>
                 <DialogFooter>
