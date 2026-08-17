@@ -54,11 +54,12 @@ export const listGithubRepos = createServerFn({ method: "GET" })
       return { connected: true as const, repos, username: profile.github_username ?? null };
     } catch (err) {
       console.error("Failed to list GitHub repos:", err);
+      const detail = err instanceof Error ? err.message : "No se pudo consultar la API de GitHub.";
       return {
         connected: true as const,
         repos: [],
         username: profile.github_username ?? null,
-        error: "No se pudo consultar la API de GitHub.",
+        error: detail,
       };
     }
   });
