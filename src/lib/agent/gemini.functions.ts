@@ -216,14 +216,14 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     let contents: any[] = [{ role: "user", parts: [{ text: data.message }] }];
 
     for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
-      const result = await genAI.models.generateContent({
+      const response = await genAI.models.generateContent({
         model: modelName,
-        systemInstruction,
-        tools,
+        config: { systemInstruction, tools } as any,
         contents,
       });
 
-      const response = result.response;
+      // Response structure: GenerateContentResponse
+      // candidate is generated content
       const candidate = response.candidates?.[0];
       const modelContent = candidate?.content;
 
