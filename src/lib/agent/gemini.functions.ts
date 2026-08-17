@@ -211,17 +211,20 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     let finalText = "";
     const editCalls: Array<{ file_path: string; new_content: string; summary: string }> = [];
 
-    // The @google/genai library actually uses models.generateContent directly on the instance
-    // or through a model object. In the new SDK version installed, it uses generateContent.
+    // Using the generateContent method directly as supported by @google/genai 2.17.1
     let contents: any[] = [{ role: "user", parts: [{ text: data.message }] }];
 
     for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
       console.log(`[Agent] Iteration ${iteration} starting...`);
       let response;
       try {
+        // Correct usage for this SDK version: models.generateContent(request)
         response = await genAI.models.generateContent({
           model: modelName,
-          config: { systemInstruction, tools } as any,
+          config: { 
+            systemInstruction: { role: "system", parts: [{ text: systemInstruction }] } as any,
+            tools 
+          } as any,
           contents,
         });
         console.log(`[Agent] Iteration ${iteration} response received.`);
