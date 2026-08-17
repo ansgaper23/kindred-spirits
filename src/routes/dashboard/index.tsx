@@ -12,6 +12,8 @@ import {
   CheckCircle2,
   KeyRound,
   ExternalLink,
+  Github,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,20 +111,76 @@ function DashboardHome() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-1 mb-8">
+        <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+          Dashboard
+        </h2>
+        <p className="text-sm text-slate-400">
+          Conecta tu cuenta de GitHub y habla con el agente de IA.
+        </p>
+      </div>
+
+      <Card className="bg-slate-900/40 border-white/10 backdrop-blur-md overflow-hidden shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]">
+        <div className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <Github className="w-6 h-6 text-slate-100" />
+              <h3 className="text-lg font-bold text-slate-100">Conexión con GitHub</h3>
+            </div>
+            {githubReposQuery.data?.connected ? (
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400 uppercase tracking-widest w-fit">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Conectado (@{githubReposQuery.data.username})
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-[10px] font-bold text-rose-400 uppercase tracking-widest w-fit">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                No conectado
+              </div>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <Button 
+              className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 h-10 shadow-[0_0_20px_rgba(37,99,235,0.3)] transition-all active:scale-95"
+              onClick={() => setDialogOpen(true)}
+            >
+              <Github className="w-4 h-4 mr-2" />
+              Conectar GitHub
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="h-10 w-auto px-4 bg-slate-950/50 border-white/10 text-slate-100 hover:bg-white/5 transition-all"
+              onClick={() => queryClient.invalidateQueries({ queryKey: ["github-repos"] })}
+              disabled={githubReposQuery.isLoading}
+            >
+              <RefreshCw className={cn("w-4 h-4 mr-2", githubReposQuery.isLoading && "animate-spin")} />
+              Actualizar
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      <div className="flex items-center justify-between mt-12 mb-6">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Tus repositorios</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Conecta un repositorio para empezar a chatear con el agente.
+          <h2 className="text-xl font-bold tracking-tight text-slate-100">Tus repositorios</h2>
+          <p className="text-sm text-slate-500 mt-1">
+            Gestiona los repositorios conectados al agente.
           </p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="w-4 h-4 mr-2" />
-              Conectar
-            </Button>
-          </DialogTrigger>
+        {!githubReposQuery.isLoading && repos.length > 0 && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-xs text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
+            onClick={() => setDialogOpen(true)}
+          >
+            <Plus className="w-3.5 h-3.5 mr-1.5" />
+            Añadir más
+          </Button>
+        )}
+      </div>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Conectar un repositorio</DialogTitle>
