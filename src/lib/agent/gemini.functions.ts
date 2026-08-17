@@ -224,11 +224,7 @@ export const processAgentMessage = createServerFn({ method: "POST" })
           config: { 
           systemInstruction: { role: "system", parts: [{ text: systemInstruction }] } as any,
           tools: tools as any,
-          generationConfig: {
-            temperature: 0.2,
-            topP: 0.95,
-          } as any,
-        },
+        } as any,
         contents,
       });
         console.log(`[Agent] Iteration ${iteration} response received.`);
