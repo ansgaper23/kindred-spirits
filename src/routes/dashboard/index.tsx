@@ -171,14 +171,14 @@ function DashboardHome() {
               <h3 className="text-lg font-bold text-slate-100">GitHub OAuth App</h3>
             </div>
             {githubReposQuery.data?.connected ? (
-              <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400 uppercase tracking-widest w-fit">
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400 uppercase tracking-widest w-fit shadow-[0_0_10px_rgba(16,185,129,0.1)]">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Conectado (@{githubReposQuery.data.username})
               </div>
             ) : (
-              <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-[10px] font-bold text-rose-400 uppercase tracking-widest w-fit">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                No conectado
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-500/10 border border-white/5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-fit">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+                Desconectado
               </div>
             )}
           </div>
