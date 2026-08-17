@@ -100,9 +100,9 @@ function DashboardHome() {
               </DialogDescription>
             </DialogHeader>
             <Tabs defaultValue={githubReposQuery.data?.connected ? "github" : "manual"}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="github">Tu GitHub</TabsTrigger>
-                <TabsTrigger value="manual">Repo público</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 bg-slate-950/50 border border-white/10 p-1 rounded-xl">
+                <TabsTrigger value="github" className="rounded-lg data-[state=active]:bg-cyan-500/10 data-[state=active]:text-cyan-400">Tu GitHub</TabsTrigger>
+                <TabsTrigger value="manual" className="rounded-lg data-[state=active]:bg-cyan-500/10 data-[state=active]:text-cyan-400">Repo público</TabsTrigger>
               </TabsList>
               <TabsContent value="github" className="space-y-3 pt-2">
                 {githubReposQuery.isLoading ? (
@@ -123,7 +123,7 @@ function DashboardHome() {
                     {(githubReposQuery.data?.repos ?? []).map((repo) => (
                       <button
                         key={repo.fullName}
-                        className="w-full text-left px-3 py-2 rounded-md hover:bg-accent flex items-center justify-between gap-2 text-sm disabled:opacity-50"
+                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-cyan-500/10 hover:text-cyan-300 transition-colors flex items-center justify-between gap-2 text-sm disabled:opacity-50 group/item"
                         disabled={connectMutation.isPending}
                         onClick={() => connectMutation.mutate(repo.fullName)}
                       >
@@ -153,6 +153,7 @@ function DashboardHome() {
                     placeholder="ej. facebook/react"
                     value={manualFullName}
                     onChange={(e) => setManualFullName(e.target.value)}
+                    className="bg-slate-950/50 border-white/10 focus:border-cyan-500/50 text-slate-100"
                   />
                   <p className="text-xs text-muted-foreground">
                     Solo repos públicos, salvo que hayas conectado tu cuenta de GitHub.
@@ -160,7 +161,7 @@ function DashboardHome() {
                 </div>
                 <DialogFooter>
                   <Button
-                    className="w-full"
+                    className="w-full border-0 bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg hover:from-cyan-400 hover:to-blue-500"
                     disabled={!manualFullName.trim() || connectMutation.isPending}
                     onClick={() => connectMutation.mutate(manualFullName.trim())}
                   >
