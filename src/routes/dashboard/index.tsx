@@ -330,7 +330,7 @@ function DashboardHome() {
                             variant="link" 
                             size="sm" 
                             className="text-blue-400 text-xs"
-                            onClick={() => window.open('https://github.com/settings/connections/applications/' + process.env.GITHUB_OAUTH_CLIENT_ID, '_blank')}
+                            onClick={() => window.open('https://github.com/settings/connections/applications/' + (process.env['GITHUB_OAUTH_CLIENT_ID'] || ''), '_blank')}
                           >
                             Revisar permisos en GitHub <ExternalLink className="w-3 h-3 ml-1" />
                           </Button>
