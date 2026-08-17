@@ -99,14 +99,18 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     // Normalize model name for the SDK
     let modelName = data.model || process.env["GEMINI_MODEL"] || "gemini-1.5-flash";
     
-    // For @google/genai v2.17.1, we MUST NOT include 'models/' when calling models.generateContent
-    // The previous error "models/gemini-1.5-flash is not found" happened because the SDK 
-    // was doubling it to "models/models/gemini-1.5-flash".
+    // The @google/genai v2 SDK usually expects just the name for models.generateContent,
+    // but the error logs show it was failing with "models/gemini-1.5-flash not found" 
+    // when we stripped it, and the logs also show it failing with "models/models/..." 
+    // if we add it twice.
+    // 
+    // CRITICAL: The logs show "models/gemini-2.0-flash is no longer available. 
+    // Please update your code to use models/gemini-3.6-flash".
+    
+    if (modelName === "gemini-2.0-flash") modelName = "gemini-1.5-flash"; // Fallback for discontinued model
+    
     if (modelName.startsWith("models/")) {
       modelName = modelName.replace("models/", "");
-    }
-    if (modelName.startsWith("tunedModels/")) {
-      modelName = modelName.replace("tunedModels/", "");
     }
 
     const systemInstruction = [
@@ -230,10 +234,8 @@ export const processAgentMessage = createServerFn({ method: "POST" })
       console.log(`[Agent] Iteration ${iteration} starting with model: ${modelName}`);
       let response;
       try {
-        // According to Google AI SDK docs for Node.js, we should use genAI.getGenerativeModel()
-        // but the user's environment has @google/genai 2.17.1 which is the NEW library (Firebase-like)
-        // In the new library, the correct way to get a model is genAI.models.get(modelName)
-        // or just passing the name to generateContent.
+        // We use the direct models.generateContent call.
+        // The SDK handles appending 'models/' internally.
         
         const modelRequest = {
           model: modelName,
@@ -243,8 +245,6 @@ export const processAgentMessage = createServerFn({ method: "POST" })
             { functionDeclarations: tools[0].functionDeclarations.map(fd => ({ ...fd, parameters: fd.parameters as any })) }
           ] : tools,
         };
-        
-        console.log(`[Agent] Sending request to Gemini:`, JSON.stringify({ ...modelRequest, contents: '...' }));
         
         response = await (genAI as any).models.generateContent(modelRequest);
         console.log(`[Agent] Iteration ${iteration} response received.`);

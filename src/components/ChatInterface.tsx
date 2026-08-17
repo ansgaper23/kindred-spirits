@@ -171,7 +171,7 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
             <SelectContent className="bg-slate-900 border-white/10 text-slate-300">
               <SelectItem value="gemini-1.5-flash" className="text-[10px] uppercase font-mono">Gemini 1.5 Flash</SelectItem>
               <SelectItem value="gemini-1.5-pro" className="text-[10px] uppercase font-mono">Gemini 1.5 Pro</SelectItem>
-              <SelectItem value="gemini-2.0-flash" className="text-[10px] uppercase font-mono">Gemini 2.0 Flash</SelectItem>
+              <SelectItem value="gemini-2.0-flash-exp" className="text-[10px] uppercase font-mono">Gemini 2.0 Flash Exp</SelectItem>
               <SelectItem value="gemini-2.0-flash-lite-preview-02-05" className="text-[10px] uppercase font-mono">Gemini 2.0 Flash Lite</SelectItem>
               <SelectItem value="gemini-2.0-pro-exp-02-05" className="text-[10px] uppercase font-mono">Gemini 2.0 Pro Exp</SelectItem>
               <SelectItem value="gemini-2.0-flash-thinking-exp" className="text-[10px] uppercase font-mono">Gemini 2.0 Thinking</SelectItem>
