@@ -134,6 +134,7 @@ function DashboardHome() {
     onSuccess: (result) => {
       toast.success(`GitHub conectado como @${result.githubUsername}.`);
       queryClient.invalidateQueries({ queryKey: ["github-repos"] });
+      setDialogOpen(true);
     },
     onError: (err: unknown) =>
       toast.error(err instanceof Error ? err.message : "No se pudo iniciar la conexión con GitHub."),
