@@ -27,7 +27,8 @@ export const ensureProfile = createServerFn({ method: "POST" })
 
     const providerToken = context.claims?.["provider_token"];
     
-    // 2. Perform the upsert, but preserve the token if the new one is null
+    // 2. Perform the upsert
+    // We explicitly target the 'id' constraint which is the Primary Key
     const { data: profile, error } = await context.supabase
       .from("profiles")
       .upsert(
@@ -40,7 +41,7 @@ export const ensureProfile = createServerFn({ method: "POST" })
           github_username: currentProfile?.github_username ?? null,
           updated_at: new Date().toISOString(),
         },
-        { onConflict: "id" },
+        { onConflict: "id" }
       )
       .select("id, email, full_name, avatar_url, github_username, github_access_token")
       .single();
