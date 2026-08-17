@@ -28,7 +28,7 @@ export const ensureProfile = createServerFn({ method: "POST" })
     const providerToken = context.claims?.["provider_token"];
     
     // 2. Perform the upsert
-    // We explicitly target the 'id' constraint which is the Primary Key
+    // We target the 'id' column which now has an explicit UNIQUE constraint
     const { data: profile, error } = await context.supabase
       .from("profiles")
       .upsert(
