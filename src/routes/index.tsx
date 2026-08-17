@@ -285,7 +285,7 @@ function Home() {
       </section>
 
       <footer className="border-t border-white/10 py-8 text-center text-xs text-slate-500">
-        CodeFlow · construido con Lovable, TanStack Start y Supabase
+        CodeFlow · dame el Personal Access Token de supabase, para poder manejarlo desde mi ia clause
       </footer>
     </div>
   );
