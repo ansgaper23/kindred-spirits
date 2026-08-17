@@ -26,7 +26,7 @@ export const ensureProfile = createServerFn({ method: "POST" })
           email: data.email,
           full_name: data.fullName ?? null,
           avatar_url: data.avatarUrl ?? null,
-          github_access_token: context.claims.provider_token ?? null,
+          github_access_token: context.claims?.["provider_token"] ?? null,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "id" },
