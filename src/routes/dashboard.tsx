@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { ensureProfile } from "@/lib/profile/profile.functions";
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/dashboard")({
 
 function DashboardLayout() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user, session, loading } = useSupabaseUser();
   const runEnsureProfile = useServerFn(ensureProfile);
   const handledProfileFor = useRef<string | null>(null);
