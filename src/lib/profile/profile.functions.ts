@@ -18,43 +18,21 @@ export const ensureProfile = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    // Use a more resilient pattern for RLS: check if exists, then insert or update.
-    // Upsert sometimes triggers "new row violates RLS" in Supabase if the insert 
-    // part of the upsert is evaluated against existing rows differently.
-    const { data: existingProfile } = await context.supabase
+    const { data: profile, error } = await context.supabase
       .from("profiles")
-      .select("id")
-      .eq("id", context.userId)
-      .maybeSingle();
-
-    let result;
-    if (existingProfile) {
-      result = await context.supabase
-        .from("profiles")
-        .update({
-          email: data.email,
-          full_name: data.fullName ?? null,
-          avatar_url: data.avatarUrl ?? null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", context.userId)
-        .select("id, email, full_name, avatar_url, github_username")
-        .single();
-    } else {
-      result = await context.supabase
-        .from("profiles")
-        .insert({
+      .upsert(
+        {
           id: context.userId,
           email: data.email,
           full_name: data.fullName ?? null,
           avatar_url: data.avatarUrl ?? null,
           updated_at: new Date().toISOString(),
-        })
-        .select("id, email, full_name, avatar_url, github_username")
-        .single();
-    }
+        },
+        { onConflict: "id" },
+      )
+      .select("id, email, full_name, avatar_url, github_username")
+      .single();
 
-    const { data: profile, error } = result;
     if (error) throw new Error(error.message);
 
     const { data: tokenRow } = await context.supabase
@@ -67,10 +45,11 @@ export const ensureProfile = createServerFn({ method: "POST" })
   });
 
 /**
- * Called once, right after a "Sign in with GitHub" redirect, with the
- * provider access token Supabase exposes on the client session. We persist
- * it so later server-side calls (listing repos, applying edits) can act on
- * the user's behalf without asking them to paste a token manually.
+ * Persists a GitHub access token for the current user — either captured
+ * automatically right after a "Sign in with GitHub" OAuth redirect, or
+ * pasted manually by the user (a GitHub Personal Access Token with `repo`
+ * scope, created at github.com/settings/tokens). Either way it's validated
+ * against the GitHub API first so we never silently save a broken token.
  */
 export const saveGithubToken = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -78,16 +57,38 @@ export const saveGithubToken = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { getAuthenticatedUser } = await import("@/lib/github/client.server");
     const identity = await getAuthenticatedUser(data.providerToken).catch(() => null);
+    if (!identity) {
+      throw new Error(
+        "Ese token no es válido o no tiene permisos suficientes. Verifica que tenga el alcance 'repo'.",
+      );
+    }
 
     const { error } = await context.supabase
       .from("profiles")
       .update({
         github_access_token: data.providerToken,
-        github_username: identity?.login ?? null,
+        github_username: identity.login,
         updated_at: new Date().toISOString(),
       })
       .eq("id", context.userId);
 
     if (error) throw new Error(error.message);
-    return { success: true, githubUsername: identity?.login ?? null };
+    return { success: true, githubUsername: identity.login };
+  });
+
+/** Disconnects the user's GitHub account by clearing the stored token. */
+export const disconnectGithub = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { error } = await context.supabase
+      .from("profiles")
+      .update({
+        github_access_token: null,
+        github_username: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", context.userId);
+
+    if (error) throw new Error(error.message);
+    return { success: true };
   });
