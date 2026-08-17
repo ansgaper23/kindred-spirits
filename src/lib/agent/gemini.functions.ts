@@ -245,28 +245,27 @@ export const processAgentMessage = createServerFn({ method: "POST" })
               { functionDeclarations: tools[0].functionDeclarations.map(fd => ({ ...fd, parameters: fd.parameters as any })) }
             ] : tools,
           };
-          console.log(`[Agent] Sending request to Gemini with model ID: ${name}`);
+          console.log(`[Agent] Sending request to Gemini with model name: ${name}`);
           return await (genAI as any).models.generateContent(modelRequest);
         };
 
         try {
-          // In this SDK version and environment, we've seen 404s for both prefixed and plain names.
-          // The logs show that "models/gemini-1.5-flash" was NOT found, which is extremely strange.
-          // We will try plain name first, then prefixed if that fails.
-          response = await makeRequest(modelName.replace("models/", ""));
+          // Attempt with 'models/' prefix first, as it is standard for v1beta endpoints.
+          const prefixedName = modelName.startsWith("models/") ? modelName : `models/${modelName}`;
+          response = await makeRequest(prefixedName);
         } catch (firstErr: any) {
           const msg = firstErr?.message || "";
           console.log(`[Agent] First attempt failed for ${modelName}: ${msg}`);
           
           if (msg.includes("not found")) {
-            // Try with prefix if plain failed
-            const prefixedName = modelName.startsWith("models/") ? modelName : `models/${modelName}`;
-            console.log(`[Agent] Retrying with prefixed model name: ${prefixedName}`);
-            response = await makeRequest(prefixedName);
+            // If prefixed failed, try the plain name
+            const plainName = modelName.replace("models/", "");
+            console.log(`[Agent] Retrying with plain model name: ${plainName}`);
+            response = await makeRequest(plainName);
           } else if (msg.includes("gemini-3.6-flash") || msg.includes("no longer available")) {
             // Fallback to flash if specific model is discontinued
             console.log(`[Agent] Model discontinued. Retrying with gemini-1.5-flash...`);
-            response = await makeRequest("gemini-1.5-flash");
+            response = await makeRequest("models/gemini-1.5-flash");
           } else {
             throw firstErr;
           }
