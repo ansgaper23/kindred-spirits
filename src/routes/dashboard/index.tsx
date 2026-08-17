@@ -14,7 +14,9 @@ import {
   ExternalLink,
   Github,
   RefreshCw,
+  Search,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,7 +38,7 @@ import {
   connectRepository,
   disconnectRepository,
 } from "@/lib/repos/repos.functions";
-import { saveGithubToken, disconnectGithub } from "@/lib/profile/profile.functions";
+import { ensureProfile, disconnectGithub } from "@/lib/profile/profile.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard/")({
@@ -47,7 +49,6 @@ function DashboardHome() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [manualFullName, setManualFullName] = useState("");
-  const [tokenInput, setTokenInput] = useState("");
 
   const runListRepositories = useServerFn(listRepositories);
   const runListGithubRepos = useServerFn(listGithubRepos);
@@ -88,15 +89,19 @@ function DashboardHome() {
     onError: () => toast.error("No se pudo desconectar el repositorio."),
   });
 
-  const saveTokenMutation = useMutation({
-    mutationFn: (providerToken: string) => runSaveGithubToken({ data: { providerToken } }),
-    onSuccess: (result) => {
-      toast.success(`Conectado como @${result.githubUsername}.`);
-      setTokenInput("");
-      queryClient.invalidateQueries({ queryKey: ["github-repos"] });
+  const githubLoginMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "github",
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+          scopes: "repo read:user workflow",
+        },
+      });
+      if (error) throw error;
     },
     onError: (err: unknown) =>
-      toast.error(err instanceof Error ? err.message : "No se pudo guardar el token."),
+      toast.error(err instanceof Error ? err.message : "No se pudo iniciar la conexión con GitHub."),
   });
 
   const disconnectGithubMutation = useMutation({
@@ -144,10 +149,11 @@ function DashboardHome() {
           <div className="flex items-center gap-3 w-full md:w-auto">
             <Button 
               className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 h-10 shadow-[0_0_20px_rgba(37,99,235,0.3)] transition-all active:scale-95"
-              onClick={() => setDialogOpen(true)}
+              onClick={() => githubReposQuery.data?.connected ? setDialogOpen(true) : githubLoginMutation.mutate()}
+              disabled={githubLoginMutation.isPending}
             >
-              <Github className="w-4 h-4 mr-2" />
-              Conectar GitHub
+              {githubLoginMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Github className="w-4 h-4 mr-2" />}
+              {githubReposQuery.data?.connected ? "Añadir repositorio" : "Conectar GitHub"}
             </Button>
             <Button 
               variant="outline" 
@@ -200,40 +206,20 @@ function DashboardHome() {
                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : !githubReposQuery.data?.connected ? (
-                  <div className="space-y-3">
-                    <div className="text-sm text-muted-foreground text-center py-2 space-y-1">
-                      <KeyRound className="w-6 h-6 mx-auto opacity-60 mb-1" />
-                      <p>Conecta tu cuenta pegando un token de acceso personal de GitHub.</p>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="ghToken">Personal Access Token</Label>
-                      <Input
-                        id="ghToken"
-                        type="password"
-                        placeholder="ghp_..."
-                        autoComplete="off"
-                        value={tokenInput}
-                        onChange={(e) => setTokenInput(e.target.value)}
-                      />
-                      <a
-                        href="https://github.com/settings/tokens/new?description=CodeFlow&scopes=repo"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs text-primary hover:underline inline-flex items-center gap-1"
-                      >
-                        Crear un token con permiso "repo" en GitHub
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
+                   <div className="space-y-4 py-4">
+                    <div className="text-sm text-muted-foreground text-center space-y-2">
+                      <Github className="w-8 h-8 mx-auto opacity-60 mb-1" />
+                      <p>Para ver tus repositorios privados y colaborar, conecta tu cuenta de GitHub.</p>
                     </div>
                     <Button
-                      className="w-full"
-                      disabled={!tokenInput.trim() || saveTokenMutation.isPending}
-                      onClick={() => saveTokenMutation.mutate(tokenInput.trim())}
+                      className="w-full bg-blue-600 hover:bg-blue-500"
+                      disabled={githubLoginMutation.isPending}
+                      onClick={() => githubLoginMutation.mutate()}
                     >
-                      {saveTokenMutation.isPending && (
+                      {githubLoginMutation.isPending && (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       )}
-                      Conectar GitHub
+                      Conectar GitHub (OAuth)
                     </Button>
                   </div>
                 ) : (

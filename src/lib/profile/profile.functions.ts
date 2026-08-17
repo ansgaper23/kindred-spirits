@@ -26,22 +26,17 @@ export const ensureProfile = createServerFn({ method: "POST" })
           email: data.email,
           full_name: data.fullName ?? null,
           avatar_url: data.avatarUrl ?? null,
+          github_access_token: context.claims.provider_token ?? null,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "id" },
       )
-      .select("id, email, full_name, avatar_url, github_username")
+      .select("id, email, full_name, avatar_url, github_username, github_access_token")
       .single();
 
     if (error) throw new Error(error.message);
 
-    const { data: tokenRow } = await context.supabase
-      .from("profiles")
-      .select("github_access_token")
-      .eq("id", context.userId)
-      .maybeSingle();
-
-    return { profile, githubConnected: Boolean(tokenRow?.github_access_token) };
+    return { profile, githubConnected: Boolean(profile?.github_access_token) };
   });
 
 /**
