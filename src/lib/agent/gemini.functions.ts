@@ -270,12 +270,12 @@ export const processAgentMessage = createServerFn({ method: "POST" })
         break;
       }
 
-      const toolResponses: any[] = [];
+      const toolParts: any[] = [];
       for (const call of calls) {
         if (!call.name) continue;
         toolLog.push(`${call.name}(${JSON.stringify(call.args ?? {})})`);
         const toolResult = await executeTool(call.name, call.args as any);
-        toolResponses.push({
+        toolParts.push({
           functionResponse: {
             name: call.name,
             response: { result: toolResult },
@@ -283,18 +283,7 @@ export const processAgentMessage = createServerFn({ method: "POST" })
         });
       }
 
-        toolResponses.push({
-          role: "user",
-          parts: [{
-            functionResponse: {
-              name: call.name,
-              response: { result: toolResult },
-            },
-          }],
-        });
-      }
-
-      contents.push(...toolResponses);
+      contents.push({ role: "user", parts: toolParts });
 
       if (iteration === MAX_TOOL_ITERATIONS - 1) {
         finalText = "No pude terminar de explorar el repositorio en el tiempo asignado. ¿Puedes ser más específico?";
