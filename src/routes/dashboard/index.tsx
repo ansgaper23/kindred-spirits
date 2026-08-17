@@ -62,6 +62,15 @@ function DashboardHome() {
   const runStartGithubOAuth = useServerFn(startGithubOAuth);
   const runCompleteGithubOAuth = useServerFn(completeGithubOAuth);
 
+  const profileQuery = useQuery({
+    queryKey: ["profile"],
+    queryFn: () => runEnsureProfile({
+      data: {
+        email: "", // Will be filled from current metadata if needed by the handler, 
+                  // but we mainly want the status
+      }
+    }),
+  });
 
   const reposQuery = useQuery({
     queryKey: ["repositories"],
@@ -71,7 +80,9 @@ function DashboardHome() {
   const githubReposQuery = useQuery({
     queryKey: ["github-repos"],
     queryFn: () => runListGithubRepos(),
-    enabled: dialogOpen,
+    // Auto-fetch if the profile says we are connected, or if the dialog is open
+    enabled: !!profileQuery.data?.githubConnected || dialogOpen,
+    retry: false, // Don't spam if token is actually invalid
   });
 
   const connectMutation = useMutation({
@@ -170,10 +181,10 @@ function DashboardHome() {
               <Github className="w-6 h-6 text-slate-100" />
               <h3 className="text-lg font-bold text-slate-100">GitHub OAuth App</h3>
             </div>
-            {githubReposQuery.data?.connected ? (
+            {githubReposQuery.data?.connected || profileQuery.data?.githubConnected ? (
               <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400 uppercase tracking-widest w-fit shadow-[0_0_10px_rgba(16,185,129,0.1)]">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Conectado (@{githubReposQuery.data.username})
+                Conectado (@{githubReposQuery.data?.username || profileQuery.data?.profile?.github_username || "..."})
               </div>
             ) : (
               <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-500/10 border border-white/5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-fit">

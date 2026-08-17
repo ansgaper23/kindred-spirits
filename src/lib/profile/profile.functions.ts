@@ -18,6 +18,16 @@ export const ensureProfile = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
+    // 1. Fetch current profile to see if we already have a token
+    const { data: currentProfile } = await context.supabase
+      .from("profiles")
+      .select("github_access_token, github_username")
+      .eq("id", context.userId)
+      .maybeSingle();
+
+    const providerToken = context.claims?.["provider_token"];
+    
+    // 2. Perform the upsert, but preserve the token if the new one is null
     const { data: profile, error } = await context.supabase
       .from("profiles")
       .upsert(
@@ -26,7 +36,8 @@ export const ensureProfile = createServerFn({ method: "POST" })
           email: data.email,
           full_name: data.fullName ?? null,
           avatar_url: data.avatarUrl ?? null,
-          github_access_token: context.claims?.["provider_token"] ?? null,
+          github_access_token: providerToken ?? currentProfile?.github_access_token ?? null,
+          github_username: currentProfile?.github_username ?? null,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "id" },
