@@ -3,91 +3,63 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Server function to handle the agent loop with Gemini.
- * Coordinates Gemini API calls and e2b sandbox execution.
+ * Process a message from the user using the Gemini agent.
+ * Currently uses a mock implementation that simulates agent reasoning and file editing.
  */
 export const processAgentMessage = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => 
-    z.object({
-      conversationId: z.string().uuid(),
-      message: z.string(),
-      repositoryId: z.string().uuid(),
-    }).parse(data)
-  )
+  .inputValidator((data) => z.object({
+    conversationId: z.string().uuid(),
+    message: z.string(),
+    repositoryId: z.string().uuid().optional(),
+  }).parse(data))
   .handler(async ({ data }) => {
-    const { conversationId, message, repositoryId } = data;
-    
-    // 1. Get user session to identify the user
-    // Note: requireSupabaseAuth middleware would handle this more robustly,
-    // but we'll start with basic integration.
-    
-    console.log(`[Agent] Processing: "${message}" for repo ${repositoryId}`);
+    // In a real implementation, we would:
+    // 1. Fetch conversation history
+    // 2. Fetch repository details (GitHub token, URL)
+    // 3. Initialize Gemini model with tools (read_file, list_files, etc.)
+    // 4. Initialize E2B sandbox and clone repo
+    // 5. Run agent loop:
+    //    a. Send message to Gemini
+    //    b. Gemini decides to use tools
+    //    c. Execute tools in E2B sandbox
+    //    d. Feed results back to Gemini
+    //    e. Repeat until Gemini provides a final response or proposed edits
 
-    // 2. Mocking the Agent Loop for MVP
-    // In production, this would:
-    // - Initialize Gemini with tools (read_file, propose_edit, etc.)
-    // - Initialize e2b sandbox
-    // - Execute the loop until a final answer or proposed edit is reached
-    
-    // Simulate thinking delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    console.log(`Processing message for repo ${data.repositoryId}: ${data.message}`);
 
-    const assistantResponse = {
-      role: 'assistant' as const,
-      content: "I've analyzed the repository. I recommend adding email validation to the registration form. I've prepared a diff for your review.",
-      thought: "The user wants email validation. I checked `src/components/RegistrationForm.tsx` and found the `onSubmit` handler needs a regex check.",
-      proposedEdits: [
-        {
-          file_path: 'src/components/RegistrationForm.tsx',
-          diff: `--- src/components/RegistrationForm.tsx
-+++ src/components/RegistrationForm.tsx
-@@ -10,1 +10,6 @@
-   const onSubmit = (data) => {
+    // Simulate agent latency
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Mock response based on common requests
+    if (data.message.toLowerCase().includes('validation') || data.message.toLowerCase().includes('email')) {
+      return {
+        success: true,
+        content: "I've analyzed the registration form and found that it's missing email validation. I've prepared a diff that adds a regex check and an error message.",
+        thought: "User wants to add validation. I need to: 1. Locate the registration form. 2. Identify where validation logic is handled. 3. Propose a change to include email regex validation.",
+        proposedEdits: [
+          {
+            file_path: "src/components/RegisterForm.tsx",
+            diff: `--- src/components/RegisterForm.tsx
++++ src/components/RegisterForm.tsx
+@@ -10,5 +10,12 @@
+   const handleSubmit = (e: React.FormEvent) => {
+     e.preventDefault();
 +    const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
-+    if (!emailRegex.test(data.email)) {
-+      setError("Please enter a valid email address");
++    if (!emailRegex.test(email)) {
++      setError("Invalid email address");
 +      return;
 +    }
-     console.log("Form submitted:", data);`
-        }
-      ]
-    };
-
-    // 3. Store messages in database if conversation exists
-    try {
-      // Save User Message
-      await supabase.from('messages').insert({
-        conversation_id: conversationId,
-        role: 'user',
-        content: message
-      });
-
-      // Save Assistant Message
-      const { data: msgData, error: msgError } = await supabase.from('messages').insert({
-        conversation_id: conversationId,
-        role: 'assistant',
-        content: assistantResponse.content,
-        thought: assistantResponse.thought
-      }).select().single();
-
-      if (!msgError && msgData && assistantResponse.proposedEdits) {
-        // Save Proposed Edits
-        for (const edit of assistantResponse.proposedEdits) {
-          await supabase.from('proposed_edits').insert({
-            message_id: msgData.id,
-            file_path: edit.file_path,
-            diff: edit.diff,
-            status: 'pending'
-          });
-        }
-      }
-    } catch (e) {
-      console.error("[Agent] DB storage error:", e);
-      // Continue anyway to return the response to the user
+     // ... rest of logic
+   };`
+          }
+        ]
+      };
     }
 
     return {
       success: true,
-      ...assistantResponse
+      content: `I've explored the repository. What specific task would you like me to perform?`,
+      thought: "The user's request is broad. I'll ask for clarification while confirming I have access to the codebase.",
+      proposedEdits: []
     };
   });
