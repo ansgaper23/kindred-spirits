@@ -112,8 +112,8 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     // Please update your code to use models/gemini-3.6-flash".
     if (modelName === "gemini-2.0-flash") modelName = "gemini-1.5-flash"; 
     
-    // In this specific environment, some models require the 'models/' prefix 
-    // while others might fail if it's double-prefixed. We'll handle this in the retry loop.
+    // Some models like 2.0 Pro Exp might work without prefix while others need it.
+    // We'll prioritize prefix in the retry loop as it's the more common requirement.
 
     const systemInstruction = [
       "You are the CodeFlow agent, a careful senior engineer pair-programming inside a chat UI.",
