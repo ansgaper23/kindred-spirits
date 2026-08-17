@@ -95,7 +95,12 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     const { createTwoFilesPatch } = await import("diff");
 
     const genAI = new GoogleGenAI({ apiKey });
-    const modelName = data.model || process.env["GEMINI_MODEL"] || "gemini-1.5-flash";
+    
+    // Normalize model name for the SDK (remove 'models/' prefix if present, as the SDK adds it)
+    let modelName = data.model || process.env["GEMINI_MODEL"] || "gemini-1.5-flash";
+    if (modelName.startsWith("models/")) {
+      modelName = modelName.replace("models/", "");
+    }
 
     const systemInstruction = [
       "You are the CodeFlow agent, a careful senior engineer pair-programming inside a chat UI.",
