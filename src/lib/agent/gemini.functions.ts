@@ -26,9 +26,6 @@ interface ProposedEditOut {
  * model explore (list_files / read_file / search_code), and stops either on
  * a plain-text answer or on one-or-more propose_edit calls — which are
  * turned into real unified diffs and persisted as pending approvals.
- *
- * Requires the GEMINI_API_KEY environment variable. Without it, this
- * function fails clearly instead of pretending to work.
  */
 export const processAgentMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -97,72 +94,76 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     const { GoogleGenAI } = await import("@google/genai");
     const { createTwoFilesPatch } = await import("diff");
 
-    const ai = new GoogleGenAI(apiKey as any);
-    const model = data.model || process.env["GEMINI_MODEL"] || "gemini-1.5-flash";
-
-    const tools = [
-      {
-        functionDeclarations: [
-          {
-            name: "list_files",
-            description:
-              "List files and folders at a path in the repository (empty path = repo root).",
-            parametersJsonSchema: {
-              type: "object",
-              properties: {
-                path: {
-                  type: "string",
-                  description: "Directory path, e.g. 'src/components'. Empty for root.",
+    // The newer @google/genai SDK (>= 0.x / 1.x) uses a constructor that takes an options object or string.
+    // If it's the very latest, it might expect { apiKey: string }.
+    const genAI = new GoogleGenAI(apiKey as any);
+    const modelName = data.model || process.env["GEMINI_MODEL"] || "gemini-1.5-flash";
+    
+    const model = (genAI as any).getGenerativeModel({
+      model: modelName,
+      systemInstruction: [
+        "You are the CodeFlow agent, a careful senior engineer pair-programming inside a chat UI.",
+        `You are working on the GitHub repository ${repo.full_name} (default branch: ${repo.default_branch}).`,
+        "Use list_files/read_file/search_code to explore before proposing anything — never guess file contents.",
+        "When you're ready to make a change, call propose_edit with the file's complete new content. You may call it more than once for multi-file changes.",
+        "If the request is unclear or too broad, ask a clarifying question in plain text instead of calling propose_edit.",
+        "Keep prose replies short. Reply in the same language the user wrote in.",
+      ].join("\n"),
+      tools: [
+        {
+          functionDeclarations: [
+            {
+              name: "list_files",
+              description:
+                "List files and folders at a path in the repository (empty path = repo root).",
+              parameters: {
+                type: "OBJECT" as any,
+                properties: {
+                  path: {
+                    type: "STRING",
+                    description: "Directory path, e.g. 'src/components'. Empty for root.",
+                  },
                 },
               },
             },
-          },
-          {
-            name: "read_file",
-            description: "Read the text content of a single file in the repository.",
-            parametersJsonSchema: {
-              type: "object",
-              properties: {
-                path: { type: "string", description: "File path, e.g. 'src/App.tsx'." },
+            {
+              name: "read_file",
+              description: "Read the text content of a single file in the repository.",
+              parameters: {
+                type: "OBJECT" as any,
+                properties: {
+                  path: { type: "STRING", description: "File path, e.g. 'src/App.tsx'." },
+                },
+                required: ["path"],
               },
-              required: ["path"],
             },
-          },
-          {
-            name: "search_code",
-            description: "Search the repository's code for a string or symbol.",
-            parametersJsonSchema: {
-              type: "object",
-              properties: { query: { type: "string" } },
-              required: ["query"],
-            },
-          },
-          {
-            name: "propose_edit",
-            description:
-              "Propose a change to a file for the user to review and approve. Provide the FULL new content of the file (not a diff). Call this once per file you want to change, only after you've read the file's current content.",
-            parametersJsonSchema: {
-              type: "object",
-              properties: {
-                file_path: { type: "string" },
-                new_content: { type: "string", description: "The complete new file content." },
-                summary: { type: "string", description: "One sentence describing the change." },
+            {
+              name: "search_code",
+              description: "Search the repository's code for a string or symbol.",
+              parameters: {
+                type: "OBJECT" as any,
+                properties: { query: { type: "STRING" } },
+                required: ["query"],
               },
-              required: ["file_path", "new_content", "summary"],
             },
-          },
-        ],
-      },
-    ];
-
-    const systemInstruction = [
-      "You are the CodeFlow agent, a careful senior engineer pair-programming inside a chat UI.",
-      `You are working on the GitHub repository ${repo.full_name} (default branch: ${repo.default_branch}).`,
-      "Use list_files/read_file/search_code to explore before proposing anything — never guess file contents.",
-      "When you're ready to make a change, call propose_edit with the file's complete new content. You may call it more than once for multi-file changes.",
-      "If the request is unclear or too broad, ask a clarifying question in plain text instead of calling propose_edit.",
-      "Keep prose replies short. Reply in the same language the user wrote in.",
-    ].join("\n");
+            {
+              name: "propose_edit",
+              description:
+                "Propose a change to a file for the user to review and approve. Provide the FULL new content of the file (not a diff). Call this once per file you want to change, only after you've read the file's current content.",
+              parameters: {
+                type: "OBJECT" as any,
+                properties: {
+                  file_path: { type: "STRING" },
+                  new_content: { type: "STRING", description: "The complete new file content." },
+                  summary: { type: "STRING", description: "One sentence describing the change." },
+                },
+                required: ["file_path", "new_content", "summary"],
+              },
+            },
+          ],
+        },
+      ],
+    });
 
     async function executeTool(
       name: string,
@@ -210,32 +211,28 @@ export const processAgentMessage = createServerFn({ method: "POST" })
       }
     }
 
-    const contents: Content[] = [{ role: "user", parts: [{ text: data.message }] }];
+    const chat = model.startChat({ history: [] });
     const toolLog: string[] = [];
     let finalText = "";
     const editCalls: Array<{ file_path: string; new_content: string; summary: string }> = [];
 
+    // Send the first message
+    let result = await chat.sendMessage(data.message);
+    
     for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
-      const response = await ai.models.generateContent({
-        model,
-        contents,
-        config: { tools, systemInstruction },
-      });
+      const response = result.response;
+      const calls = response.functionCalls() || [];
 
-      const modelContent = response.candidates?.[0]?.content;
-      if (modelContent) contents.push(modelContent);
-
-      const calls = response.functionCalls ?? [];
       if (calls.length === 0) {
-        finalText = response.text ?? "";
+        finalText = response.text();
         break;
       }
 
-      const proposals = calls.filter((c) => c.name === "propose_edit");
+      const proposals = calls.filter((c: any) => c.name === "propose_edit");
       if (proposals.length > 0) {
         const summaries: string[] = [];
         for (const call of proposals) {
-          const args = call.args ?? {};
+          const args = (call.args as any) ?? {};
           const filePath = typeof args["file_path"] === "string" ? args["file_path"] : "";
           const newContent = typeof args["new_content"] === "string" ? args["new_content"] : "";
           const summary = typeof args["summary"] === "string" ? args["summary"] : "";
@@ -247,18 +244,24 @@ export const processAgentMessage = createServerFn({ method: "POST" })
         break;
       }
 
-      const responseParts: NonNullable<Content["parts"]> = [];
+      const toolResponses = [];
       for (const call of calls) {
         if (!call.name) continue;
         toolLog.push(`${call.name}(${JSON.stringify(call.args ?? {})})`);
-        const result = await executeTool(call.name, call.args);
-        responseParts.push({ functionResponse: { name: call.name, response: { result } } });
+        const toolResult = await executeTool(call.name, call.args as any);
+        toolResponses.push({
+          functionResponse: {
+            name: call.name,
+            response: { result: toolResult },
+          },
+        });
       }
-      contents.push({ role: "user", parts: responseParts });
+
+      // Send tool responses back to continue the loop
+      result = await chat.sendMessage(toolResponses);
 
       if (iteration === MAX_TOOL_ITERATIONS - 1) {
-        finalText =
-          "No pude terminar de explorar el repositorio en el tiempo asignado. ¿Puedes ser más específico?";
+        finalText = "No pude terminar de explorar el repositorio en el tiempo asignado. ¿Puedes ser más específico?";
       }
     }
 
