@@ -1,77 +1,119 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ChatInterface } from "@/components/ChatInterface";
+import { Github, FolderGit2, Plus, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { useState } from "react";
 
 export const Route = createFileRoute("/")({
   component: Index,
 });
 
 function Index() {
+  const [isConnected, setIsConnected] = useState(false);
+  const [selectedRepo, setSelectedRepo] = useState<{ id: string, name: string } | null>(null);
+
+  // Mock data for demo
+  const mockRepos = [
+    { id: '1', name: 'my-web-app', description: 'React + Tailwind project' },
+    { id: '2', name: 'api-server', description: 'Node.js backend' },
+  ];
+
+  if (!isConnected) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/20 p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+              <Github className="w-8 h-8 text-primary" />
+            </div>
+            <CardTitle className="text-2xl">Welcome to CodeFlow</CardTitle>
+            <CardDescription>
+              Connect your GitHub account to start shipping code with AI assistance.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button className="w-full" onClick={() => setIsConnected(true)}>
+              <Github className="w-4 h-4 mr-2" />
+              Connect GitHub
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-8 max-w-4xl mx-auto prose dark:prose-invert">
-      <h1 id="prompt-para-construir-gitflow-versión-con-gemini-como-motor-de-ia">Prompt para construir "GitFlow" (versión con Gemini como motor de IA)</h1>
-      <p>Copia y pega el siguiente prompt en tu asistente de código (Claude Code, Cursor, Windsurf, o el propio Gemini CLI) para que te ayude a construir el proyecto. Está escrito para que el asistente entienda el producto completo y empiece a generar la estructura del proyecto.</p>
-      <hr />
-      <h2 id="prompt">PROMPT</h2>
-      <p>Actúa como un ingeniero de software senior full-stack, especializado en productos SaaS con IA agéntica. Quiero que me ayudes a construir, paso a paso, una aplicación web llamada <strong>"CodeFlow"</strong> (o el nombre que definamos), con el siguiente objetivo:</p>
-      <p><strong>Producto:</strong> una plataforma donde un usuario conecta un repositorio de GitHub, conversa en lenguaje natural con un agente de IA para pedir cambios en el código, revisa un diff de los cambios propuestos, y solo si aprueba, la plataforma aplica los cambios (commit en una rama nueva y, opcionalmente, abre un Pull Request). El agente <strong>nunca</strong> escribe directamente en la rama principal ni aplica cambios sin aprobación explícita del usuario.</p>
-      <h3 id="1-motor-de-ia">1. Motor de IA</h3>
-      <p>Usa la <strong>API de Gemini de Google</strong> (modelo <code>gemini-2.5-pro</code> o el más reciente disponible en Google AI Studio / Vertex AI) como motor del agente, aprovechando su capacidad de <strong>function calling / tool use</strong> para exponerle al modelo un set de herramientas controladas:</p>
-      <ul>
-        <li><code>read_file(path)</code> — leer un archivo del repo clonado.</li>
-        <li><code>list_files(path)</code> — listar archivos/directorios.</li>
-        <li><code>search_code(query)</code> — buscar texto o símbolos en el repo.</li>
-        <li><code>propose_edit(path, diff)</code> — proponer un cambio (nunca lo aplica directamente, solo lo registra como propuesta pendiente de aprobación).</li>
-        <li><code>run_command(cmd)</code> — ejecutar comandos de solo lectura (tests, linters) dentro del sandbox, nunca comandos destructivos sin aprobación.</li>
-      </ul>
-      <p>Implementa un bucle de agente (agent loop) en el backend: el modelo recibe el mensaje del usuario + el estado del repo, decide qué herramientas llamar, y termina generando un conjunto de cambios propuestos (diffs) en lugar de aplicarlos directamente. Usa como referencia arquitectónica el diseño de <code>gemini-cli</code> (github.com/google-gemini/gemini-cli), el agente de terminal open source de Google, para el patrón de bucle de herramientas.</p>
-      <h3 id="2-integración-con-github">2. Integración con GitHub</h3>
-      <ul>
-        <li>Registra una <strong>GitHub App</strong> (no un OAuth App genérico) con permisos mínimos: lectura/escritura de contenido de repositorio y de pull requests, nada más.</li>
-        <li>Al conectar, clona el repositorio dentro de un <strong>sandbox aislado y efímero</strong> (contenedor Docker por sesión, se destruye al terminar).</li>
-        <li>Todo el trabalho del agente (lectura, escritura, ejecución de comandos) ocurre dentro de ese contenedor, nunca en la infraestructura compartida.</li>
-        <li>Al aprobar los cambios, el backend hace commit en una rama nueva (<code>codeflow/cambio-&lt;id&gt;</code>) y opcionalmente abre un Pull Request vía la API de GitHub, dejando la rama principal intacta.</li>
-      </ul>
-      <h3 id="3-flujo-de-usuario">3. Flujo de usuario</h3>
-      <ol>
-        <li>Login con GitHub (OAuth) y selección del repositorio a conectar.</li>
-        <li>Pantalla de chat: el usuario describe el cambio que quiere ("agrega validación de email al formulario de registro").</li>
-        <li>El agente explora el código, piensa en voz alta (mostrar streaming de su razonamiento/pasos si es posible) y genera una propuesta de cambios.</li>
-        <li>Vista de revisión tipo diff (como la vista de "Files changed" de un PR de GitHub): el usuario ve línea por línea qué cambia, puede aprobar todo, aprobar parcialmente, pedir ajustes, o rechazar.</li>
-        <li>Al aprobar: commit + push a rama nueva + (opcional) apertura automática de PR, con un resumen del cambio generado por el propio modelo como descripción del PR.</li>
-      </ol>
-      <h3 id="4-stack-técnico-sugerido">4. Stack técnico sugerido</h3>
-      <ul>
-        <li><strong>Frontend:</strong> Next.js (React) + Tailwind CSS, con streaming de respuestas del agente (Server-Sent Events o WebSockets).</li>
-        <li><strong>Backend:</strong> Node.js (TypeScript) o Python (FastAPI), orquestando las llamadas a la API de Gemini y el sandbox.</li>
-        <li><strong>Sandbox de ejecución:</strong> contenedores Docker efímeros (o un servicio gestionado tipo e2b.dev) por sesión de trabajo.</li>
-        <li><strong>Base de datos:</strong> PostgreSQL para usuarios, repos conectados, historial de conversaciones y cambios aplicados.</li>
-        <li><strong>Autenticación:</strong> OAuth de GitHub + GitHub App para permisos de repo.</li>
-        <li><strong>Cola/orquestación de trabajos largos:</strong> Redis + BullMQ (o Celery si es Python), ya que las tareas del agente pueden tardar.</li>
-      </ul>
-      <h3 id="5-seguridad-y-cumplimiento-no-negociable">5. Seguridad y cumplimiento (no negociable)</h3>
-      <ul>
-        <li>Nunca almacenar tokens de GitHub en texto plano; cifrarlos en reposo.</li>
-        <li>Aislar completamente cada sesión de trabajo (un contenedor por repo/sesión, sin persistencia entre usuarios).</li>
-        <li>Publicar Términos de Uso y Política de Privacidad reales antes de lanzar, especialmente porque se accede a código privado de terceros.</li>
-        <li>Registrar límites de uso por usuario (tokens de la API de Gemini consumidos) para controlar costos, incluso si el plan comercial se presenta como "acceso ilimitado por tiempo".</li>
-        <li>Loguear todas las acciones del agente (qué archivos leyó, qué propuso, qué se aprobó) para auditoría.</li>
-      </ul>
-      <h3 id="6-entregables-que-espero-de-ti-asistente-de-código">6. Entregables que espero de ti (asistente de código)</h3>
-      <ol>
-        <li>Estructura inicial del monorepo (frontend + backend + infra).</li>
-        <li>Configuración de la GitHub App (manifest, permisos, webhook de instalación).</li>
-        <li>Cliente de la API de Gemini con function calling configurado con las herramientas del punto 1.</li>
-        <li>Endpoint de backend que orquesta el bucle del agente (recibe mensaje → llama a Gemini → ejecuta tools → devuelve propuesta de diff).</li>
-        <li>Componente de frontend para el chat y para la vista de revisión de diffs.</li>
-        <li>Script de despliegue básico (Docker Compose para desarrollo local).</li>
-      </ol>
-      <p>Empieza generando la estructura de carpetas del proyecto y el esqueleto del backend con el cliente de Gemini y las tool definitions. Pregúntame si necesitas decisiones de mi parte antes de asumir algo importante (nombre del proyecto, proveedor de hosting, si el MVP es solo para repos públicos o también privados, etc.).</p>
-      <hr />
-      <h2 id="notas-para-ti-fuera-del-prompt">Notas para ti (fuera del prompt)</h2>
-      <ul>
-        <li>Necesitarás una <strong>API key de Gemini</strong> desde Google AI Studio (ai.google.dev) o una cuenta de Vertex AI si prefieres facturación empresarial.</li>
-        <li>Necesitarás crear la <strong>GitHub App</strong> desde la configuración de desarrollador de tu cuenta u organización de GitHub (github.com/settings/apps).</li>
-        <li>Te recomiendo empezar el MVP soportando solo repos donde tú mismo seas colaborador (para probar sin exponer datos de terceros) antes de abrir el registro público.</li>
-      </ul>
+    <div className="min-h-screen bg-muted/20">
+      <header className="h-16 border-b bg-background flex items-center justify-between px-6 sticky top-0 z-10">
+        <div className="flex items-center gap-2 font-bold text-xl">
+          <div className="w-8 h-8 bg-primary rounded flex items-center justify-center text-primary-foreground">
+            CF
+          </div>
+          CodeFlow
+        </div>
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => setIsConnected(false)}>
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
+          </Button>
+        </div>
+      </header>
+
+      <main className="container mx-auto py-8 px-4">
+        {!selectedRepo ? (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-semibold tracking-tight">Your Repositories</h2>
+              <Button size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Connect New
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {mockRepos.map((repo) => (
+                <Card key={repo.id} className="hover:border-primary/50 transition-colors cursor-pointer group" onClick={() => setSelectedRepo(repo)}>
+                  <CardHeader>
+                    <div className="flex items-center gap-2 mb-2">
+                      <FolderGit2 className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <CardTitle className="text-lg">{repo.name}</CardTitle>
+                    </div>
+                    <CardDescription>{repo.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex justify-end">
+                      <Button variant="secondary" size="sm">Open</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-6">
+            <div className="w-full max-w-2xl flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setSelectedRepo(null)}>
+                  &larr; Back
+                </Button>
+                <div className="flex items-center gap-2 font-medium">
+                  <FolderGit2 className="w-4 h-4" />
+                  {selectedRepo.name}
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground bg-background px-2 py-1 rounded border">
+                Branch: codeflow/main
+              </div>
+            </div>
+            
+            <ChatInterface repositoryId={selectedRepo.id} />
+            
+            <div className="w-full max-w-2xl text-center text-xs text-muted-foreground mt-4">
+              Agent operations are performed in an isolated e2b sandbox.
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
