@@ -252,6 +252,15 @@ export const processAgentMessage = createServerFn({ method: "POST" })
         throw new Error("No response from AI model.");
       }
 
+      if (candidate.finishReason === "SAFETY") {
+        return {
+          success: false as const,
+          content: "La IA bloqueó la respuesta por motivos de seguridad.",
+          thought: toolLog.length > 0 ? toolLog.join("\n") : undefined,
+          conversationId,
+        };
+      }
+
       contents.push(modelContent);
 
       const calls = candidate?.content?.parts
