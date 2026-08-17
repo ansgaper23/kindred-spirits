@@ -99,9 +99,11 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     // Normalize model name for the SDK
     let modelName = data.model || process.env["GEMINI_MODEL"] || "gemini-1.5-flash";
     
-    // For @google/genai v2.17.1, we MUST NOT include 'models/' when calling models.generateContent
-    // The previous error "models/gemini-1.5-flash is not found" happened because the SDK 
-    // was doubling it to "models/models/gemini-1.5-flash".
+    // Fallback for discontinued models
+    if (modelName === "gemini-2.0-flash") modelName = "gemini-2.0-flash-exp";
+    
+    // The @google/genai SDK v2.17.1 seems to have inconsistent behavior with prefixes.
+    // We'll normalize to plain name here and let the retry loop handle the 'models/' prefix.
     if (modelName.startsWith("models/")) {
       modelName = modelName.replace("models/", "");
     }
@@ -230,23 +232,41 @@ export const processAgentMessage = createServerFn({ method: "POST" })
       console.log(`[Agent] Iteration ${iteration} starting with model: ${modelName}`);
       let response;
       try {
-        // According to Google AI SDK docs for Node.js, we should use genAI.getGenerativeModel()
-        // but the user's environment has @google/genai 2.17.1 which is the NEW library (Firebase-like)
-        // In the new library, the correct way to get a model is genAI.models.get(modelName)
-        // or just passing the name to generateContent.
-        
-        const modelRequest = {
-          model: modelName,
-          contents,
-          systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
-          tools: tools?.[0]?.functionDeclarations ? [
-            { functionDeclarations: tools[0].functionDeclarations.map(fd => ({ ...fd, parameters: fd.parameters as any })) }
-          ] : tools,
+        const makeRequest = async (name: string) => {
+          const modelRequest = {
+            model: name,
+            contents,
+            systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
+            tools: tools?.[0]?.functionDeclarations ? [
+              { functionDeclarations: tools[0].functionDeclarations.map(fd => ({ ...fd, parameters: fd.parameters as any })) }
+            ] : tools,
+          };
+          console.log(`[Agent] Sending request to Gemini with model name: ${name}`);
+          return await (genAI as any).models.generateContent(modelRequest);
         };
+
+        try {
+          // Attempt with 'models/' prefix first, as it's required for most models in v1beta.
+          const prefixedName = modelName.startsWith("models/") ? modelName : `models/${modelName}`;
+          response = await makeRequest(prefixedName);
+        } catch (firstErr: any) {
+          const msg = firstErr?.message || "";
+          console.log(`[Agent] First attempt failed for ${modelName}: ${msg}`);
+          
+          if (msg.includes("not found")) {
+            // If prefixed failed, try the plain name
+            const plainName = modelName.replace("models/", "");
+            console.log(`[Agent] Retrying with plain model name: ${plainName}`);
+            response = await makeRequest(plainName);
+          } else if (msg.includes("gemini-3.6-flash") || msg.includes("no longer available")) {
+            // Fallback to flash if specific model is discontinued
+            console.log(`[Agent] Model discontinued. Retrying with gemini-1.5-flash...`);
+            response = await makeRequest("models/gemini-1.5-flash");
+          } else {
+            throw firstErr;
+          }
+        }
         
-        console.log(`[Agent] Sending request to Gemini:`, JSON.stringify({ ...modelRequest, contents: '...' }));
-        
-        response = await (genAI as any).models.generateContent(modelRequest);
         console.log(`[Agent] Iteration ${iteration} response received.`);
       } catch (err: any) {
         console.error(`[Agent] Iteration ${iteration} failed:`, err);
