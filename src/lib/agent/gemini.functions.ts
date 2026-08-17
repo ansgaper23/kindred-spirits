@@ -12,6 +12,7 @@ const inputSchema = z.object({
   conversationId: z.string().uuid().nullable().optional(),
   message: z.string().min(1).max(4000),
   repositoryId: z.string().uuid(),
+  model: z.string().optional(),
 });
 
 interface ProposedEditOut {
@@ -95,7 +96,7 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     const { createTwoFilesPatch } = await import("diff");
 
     const ai = new GoogleGenAI({ apiKey });
-    const model = process.env["GEMINI_MODEL"] || "gemini-2.5-pro";
+    const model = data.model || process.env["GEMINI_MODEL"] || "gemini-1.5-flash";
 
     const tools = [
       {
