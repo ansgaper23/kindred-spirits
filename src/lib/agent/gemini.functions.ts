@@ -242,19 +242,32 @@ export const processAgentMessage = createServerFn({ method: "POST" })
       let response;
       try {
         // We use the direct models.generateContent call.
-        
-        const modelRequest = {
-          model: modelName,
-          contents,
-          systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
-          tools: tools?.[0]?.functionDeclarations ? [
-            { functionDeclarations: tools[0].functionDeclarations.map(fd => ({ ...fd, parameters: fd.parameters as any })) }
-          ] : tools,
+        // We will try both with and without the 'models/' prefix if one fails.
+        const makeRequest = async (name: string) => {
+          const modelRequest = {
+            model: name,
+            contents,
+            systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
+            tools: tools?.[0]?.functionDeclarations ? [
+              { functionDeclarations: tools[0].functionDeclarations.map(fd => ({ ...fd, parameters: fd.parameters as any })) }
+            ] : tools,
+          };
+          console.log(`[Agent] Trying Gemini request with model: ${name}`);
+          return await (genAI as any).models.generateContent(modelRequest);
         };
+
+        try {
+          response = await makeRequest(modelName);
+        } catch (firstErr: any) {
+          const msg = firstErr?.message || "";
+          if (msg.includes("not found") && !modelName.startsWith("models/")) {
+            console.log(`[Agent] Retrying with 'models/' prefix...`);
+            response = await makeRequest(`models/${modelName}`);
+          } else {
+            throw firstErr;
+          }
+        }
         
-        console.log(`[Agent] Sending request to Gemini:`, JSON.stringify({ ...modelRequest, contents: '...' }));
-        
-        response = await (genAI as any).models.generateContent(modelRequest);
         console.log(`[Agent] Iteration ${iteration} response received.`);
       } catch (err: any) {
         console.error(`[Agent] Iteration ${iteration} failed:`, err);
