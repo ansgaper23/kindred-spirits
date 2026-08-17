@@ -224,6 +224,8 @@ export const processAgentMessage = createServerFn({ method: "POST" })
       let response;
       try {
         // Correct usage for this SDK version: models.generateContent(request)
+        // Note: The SDK v2.x requires the model identifier to be just the name (e.g., 'gemini-1.5-flash')
+        // as it internally constructs the 'models/' or 'tunedModels/' path.
         response = await (genAI as any).models.generateContent({
           model: modelName,
           contents,
