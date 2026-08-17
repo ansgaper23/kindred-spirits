@@ -183,10 +183,10 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
                 )}
               >
                 {msg.thought && (
-                  <Card className="p-3 text-xs bg-muted/40 text-muted-foreground border-dashed border-muted-foreground/20 leading-relaxed">
-                    <div className="flex items-center gap-1.5 mb-1.5 font-semibold uppercase tracking-wider opacity-70">
+                  <Card className="p-3 text-[11px] bg-slate-900/40 text-slate-400 border-dashed border-cyan-500/20 leading-relaxed font-mono">
+                    <div className="flex items-center gap-1.5 mb-2 font-bold uppercase tracking-[0.15em] text-[9px] text-cyan-400/70">
                       <ChevronRight className="w-3 h-3" />
-                      Reasoning
+                      Neural Reasoning
                     </div>
                     {msg.thought}
                   </Card>
@@ -206,9 +206,9 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
                 {msg.proposedEdits && msg.proposedEdits.length > 0 && (
                   <div className="space-y-3 mt-2 w-full">
                     {msg.proposedEdits.map((edit, j) => (
-                      <Card key={j} className="overflow-hidden border-primary/20 bg-primary/5">
-                        <div className="p-3 border-b border-primary/10 bg-primary/10 flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+                      <Card key={j} className="overflow-hidden border-cyan-500/20 bg-cyan-500/5 shadow-[0_0_30px_-10px_rgba(34,211,238,0.1)]">
+                        <div className="p-3 border-b border-cyan-500/10 bg-cyan-500/10 flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-[11px] font-bold text-cyan-400 uppercase tracking-wider">
                             <FileText className="w-3.5 h-3.5" />
                             {edit.file_path}
                           </div>
@@ -245,37 +245,37 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
                           </pre>
                         </div>
                         {edit.status !== "applied" && edit.status !== "rejected" && (
-                          <div className="p-2 bg-muted/50 border-t flex gap-2">
+                          <div className="p-2 bg-slate-900/80 border-t border-white/10 flex gap-2">
                             <Button
                               size="sm"
-                              className="flex-1 h-8 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white"
+                              className="flex-1 h-8 text-[11px] font-bold uppercase tracking-wider bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 border border-emerald-500/30 transition-all"
                               disabled={applyingEditId !== null}
                               onClick={() => edit.id && onEditAction(edit.id, "approve")}
                             >
                               {applyingEditId === edit.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                                <Loader2 className="w-3 h-3 animate-spin mr-2" />
                               ) : (
-                                <Check className="w-3 h-3 mr-1" />
+                                <Check className="w-3 h-3 mr-2" />
                               )}
                               Approve & Apply
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
-                              className="flex-1 h-8 text-xs font-medium"
+                              className="flex-1 h-8 text-[11px] font-bold uppercase tracking-wider bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 border border-rose-500/20 transition-all"
                               disabled={applyingEditId !== null}
                               onClick={() => edit.id && onEditAction(edit.id, "reject")}
                             >
-                              <X className="w-3 h-3 mr-1" />
+                              <X className="w-3 h-3 mr-2" />
                               Reject
                             </Button>
                           </div>
                         )}
                         {(edit.status === "applied" || edit.status === "rejected") && (
-                          <div className="p-2 bg-muted/50 border-t text-center text-[10px] text-muted-foreground">
+                          <div className="p-2 bg-slate-900/80 border-t border-white/10 text-center text-[10px] text-slate-500 font-medium uppercase tracking-widest">
                             {edit.status === "applied"
-                              ? "Cambios aplicados — revisa el Pull Request en GitHub."
-                              : "Cambio rechazado."}
+                              ? "Cambios aplicados · Rama actualizada"
+                              : "Cambio rechazado"}
                           </div>
                         )}
                       </Card>
@@ -291,14 +291,14 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
                 <Bot className="w-5 h-5" />
               </div>
               <div className="flex flex-col gap-2 max-w-[80%]">
-                <Card className="p-4 bg-card rounded-tl-none border-dashed animate-pulse flex items-center gap-3">
-                  <div className="flex space-x-1">
-                    <div className="w-1.5 h-1.5 bg-muted-foreground/40 rounded-full animate-bounce" />
-                    <div className="w-1.5 h-1.5 bg-muted-foreground/40 rounded-full animate-bounce [animation-delay:0.2s]" />
-                    <div className="w-1.5 h-1.5 bg-muted-foreground/40 rounded-full animate-bounce [animation-delay:0.4s]" />
+                <Card className="p-4 bg-slate-800/50 rounded-tl-none border-dashed border-white/10 animate-pulse flex items-center gap-3 shadow-[0_0_20px_rgba(34,211,238,0.05)]">
+                  <div className="flex space-x-1.5">
+                    <div className="w-2 h-2 bg-cyan-400/60 rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-cyan-400/60 rounded-full animate-bounce [animation-delay:0.2s]" />
+                    <div className="w-2 h-2 bg-cyan-400/60 rounded-full animate-bounce [animation-delay:0.4s]" />
                   </div>
-                  <span className="text-sm text-muted-foreground italic">
-                    Agent is exploring your code...
+                  <span className="text-sm text-slate-400 italic font-medium">
+                    Explorando código...
                   </span>
                 </Card>
               </div>
