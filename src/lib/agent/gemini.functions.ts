@@ -233,8 +233,11 @@ export const processAgentMessage = createServerFn({ method: "POST" })
       console.log(`[Agent] Iteration ${iteration} starting with model: ${modelName}`);
       let response;
       try {
-        // We use the direct models.generateContent call.
-        // We will try both with and without the 'models/' prefix if one fails.
+        // The @google/genai SDK v2.17.1 has been returning 404 for 'models/gemini-...' 
+        // with the error "models/gemini-... not found for API version v1beta".
+        // This is usually because the SDK expects just the model name as the 'model' parameter
+        // in models.generateContent(), and it then constructs the full resource path internally.
+        
         const makeRequest = async (name: string) => {
           const modelRequest = {
             model: name,
@@ -244,17 +247,23 @@ export const processAgentMessage = createServerFn({ method: "POST" })
               { functionDeclarations: tools[0].functionDeclarations.map(fd => ({ ...fd, parameters: fd.parameters as any })) }
             ] : tools,
           };
-          console.log(`[Agent] Trying Gemini request with model: ${name}`);
+          console.log(`[Agent] Trying Gemini request with model name: ${name}`);
           return await (genAI as any).models.generateContent(modelRequest);
         };
 
         try {
+          // Try with just the name (e.g., 'gemini-1.5-flash')
           response = await makeRequest(modelName);
         } catch (firstErr: any) {
           const msg = firstErr?.message || "";
+          // If 404 and it didn't have the prefix, try adding it just in case this specific build requires it.
           if (msg.includes("not found") && !modelName.startsWith("models/")) {
             console.log(`[Agent] Retrying with 'models/' prefix...`);
             response = await makeRequest(`models/${modelName}`);
+          } else if (msg.includes("models/gemini-3.6-flash")) {
+            // Special fallback if Gemini 2.0 Flash Lite is also discontinued
+            console.log(`[Agent] Retrying with 'gemini-1.5-flash' as ultimate fallback...`);
+            response = await makeRequest(`gemini-1.5-flash`);
           } else {
             throw firstErr;
           }
