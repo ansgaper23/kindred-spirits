@@ -43,10 +43,12 @@ export const completeGithubOAuth = createServerFn({ method: "POST" })
     const { getAuthenticatedUser } = await import("@/lib/github/client.server");
     const identity = await getAuthenticatedUser(token);
 
+    const { encrypt } = await import("@/lib/crypto.server");
+
     const { error } = await context.supabase
       .from("profiles")
       .update({
-        github_access_token: token,
+        github_access_token: encrypt(token),
         github_username: identity.login,
         updated_at: new Date().toISOString(),
       })

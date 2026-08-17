@@ -43,22 +43,25 @@ export const listGithubRepos = createServerFn({ method: "GET" })
       .select("github_access_token, github_username")
       .eq("id", context.userId)
       .maybeSingle();
+    
+    const { decryptSafe } = await import("@/lib/crypto.server");
+    const githubToken = decryptSafe(profile?.github_access_token ?? null);
 
-    if (!profile?.github_access_token) {
+    if (!githubToken) {
       return { connected: false as const, repos: [], username: null };
     }
 
     const { listMyRepos } = await import("@/lib/github/client.server");
     try {
-      const repos = await listMyRepos(profile.github_access_token, 100);
-      return { connected: true as const, repos, username: profile.github_username ?? null };
+      const repos = await listMyRepos(githubToken, 100);
+      return { connected: true as const, repos, username: profile?.github_username ?? null };
     } catch (err) {
       console.error("Failed to list GitHub repos:", err);
       const detail = err instanceof Error ? err.message : "No se pudo consultar la API de GitHub.";
       return {
         connected: true as const,
         repos: [],
-        username: profile.github_username ?? null,
+        username: profile?.github_username ?? null,
         error: detail,
       };
     }
@@ -82,11 +85,14 @@ export const connectRepository = createServerFn({ method: "POST" })
       .eq("id", context.userId)
       .maybeSingle();
 
+    const { decryptSafe } = await import("@/lib/crypto.server");
+    const githubToken = decryptSafe(profile?.github_access_token ?? null);
+
     const { getRepo, GithubApiError } = await import("@/lib/github/client.server");
 
     let repo;
     try {
-      repo = await getRepo(owner!, name!, profile?.github_access_token ?? null);
+      repo = await getRepo(owner!, name!, githubToken);
     } catch (err) {
       if (err instanceof GithubApiError && err.status === 404) {
         throw new Error("No se encontró ese repositorio (¿es privado? conecta GitHub para verlo).");

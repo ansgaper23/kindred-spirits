@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+import { encrypt } from "@/lib/crypto.server";
+
 /**
  * Ensure a `profiles` row exists for the current user, and report back
  * whether GitHub is connected (never returns the raw token to the client).
@@ -37,7 +39,9 @@ export const ensureProfile = createServerFn({ method: "POST" })
           email: data.email,
           full_name: data.fullName ?? null,
           avatar_url: data.avatarUrl ?? null,
-          github_access_token: providerToken ?? currentProfile?.github_access_token ?? null,
+          github_access_token: providerToken 
+            ? encrypt(providerToken) 
+            : currentProfile?.github_access_token ?? null,
           github_username: currentProfile?.github_username ?? null,
           updated_at: new Date().toISOString(),
         },
@@ -73,7 +77,7 @@ export const saveGithubToken = createServerFn({ method: "POST" })
     const { error } = await context.supabase
       .from("profiles")
       .update({
-        github_access_token: data.providerToken,
+        github_access_token: encrypt(data.providerToken),
         github_username: identity.login,
         updated_at: new Date().toISOString(),
       })
