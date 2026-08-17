@@ -40,23 +40,24 @@ export const listGithubRepos = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data: profile } = await context.supabase
       .from("profiles")
-      .select("github_access_token")
+      .select("github_access_token, github_username")
       .eq("id", context.userId)
       .maybeSingle();
 
     if (!profile?.github_access_token) {
-      return { connected: false as const, repos: [] };
+      return { connected: false as const, repos: [], username: null };
     }
 
     const { listMyRepos } = await import("@/lib/github/client.server");
     try {
       const repos = await listMyRepos(profile.github_access_token, 100);
-      return { connected: true as const, repos };
+      return { connected: true as const, repos, username: profile.github_username ?? null };
     } catch (err) {
       console.error("Failed to list GitHub repos:", err);
       return {
         connected: true as const,
         repos: [],
+        username: profile.github_username ?? null,
         error: "No se pudo consultar la API de GitHub.",
       };
     }

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Github, Loader2, Mail } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +25,6 @@ function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [githubLoading, setGithubLoading] = useState(false);
   const [checkEmail, setCheckEmail] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,21 +49,6 @@ function SignupPage() {
     } else {
       // Email confirmation is required before a session is issued.
       setCheckEmail(true);
-    }
-  };
-
-  const handleGithub = async () => {
-    setGithubLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`,
-        scopes: "repo read:user user:email",
-      },
-    });
-    if (error) {
-      toast.error(`No se pudo continuar con GitHub: ${error.message}`);
-      setGithubLoading(false);
     }
   };
 
@@ -106,29 +90,6 @@ function SignupPage() {
           <CardDescription>Empieza a editar código con IA en minutos.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={handleGithub}
-            disabled={githubLoading}
-          >
-            {githubLoading ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Github className="w-4 h-4 mr-2" />
-            )}
-            Continuar con GitHub
-          </Button>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">o con tu email</span>
-            </div>
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="space-y-1.5">
               <Label htmlFor="fullName">Nombre</Label>
