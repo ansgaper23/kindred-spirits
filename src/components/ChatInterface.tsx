@@ -287,7 +287,7 @@ export function ChatInterface({ repositoryId }: { repositoryId: string }) {
           ))}
           {isProcessing && (
             <div className="flex gap-4">
-              <div className="w-9 h-9 rounded-full bg-card border flex items-center justify-center shrink-0 shadow-sm">
+              <div className="w-9 h-9 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center shrink-0 shadow-sm text-cyan-400 animate-pulse">
                 <Bot className="w-5 h-5" />
               </div>
               <div className="flex flex-col gap-2 max-w-[80%]">
