@@ -77,19 +77,22 @@ function DashboardHome() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Tus repositorios</h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h2 className="text-2xl font-semibold tracking-tight text-white">Tus repositorios</h2>
+          <p className="text-sm text-slate-400 mt-1">
             Conecta un repositorio para empezar a chatear con el agente.
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="sm">
+            <Button 
+              size="sm"
+              className="border-0 bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_0_20px_-4px_rgba(34,211,238,0.7)] hover:from-cyan-400 hover:to-blue-500"
+            >
               <Plus className="w-4 h-4 mr-2" />
               Conectar
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-slate-100">
             <DialogHeader>
               <DialogTitle>Conectar un repositorio</DialogTitle>
               <DialogDescription>
