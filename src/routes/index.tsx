@@ -109,7 +109,7 @@ function Index() {
             <ChatInterface repositoryId={selectedRepo.id} />
             
             <div className="w-full max-w-2xl text-center text-xs text-muted-foreground mt-4">
-              Agent operations are performed in an isolated e2b sandbox.
+              Agent operations are performed in an isolated e2b sandbox. La base de datos que sea en supabase.
             </div>
           </div>
         )}
