@@ -211,16 +211,37 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     let finalText = "";
     const editCalls: Array<{ file_path: string; new_content: string; summary: string }> = [];
 
-    // The @google/genai library actually uses models.generateContent directly on the instance
-    // or through a model object. In the new SDK version installed, it uses generateContent.
+    // Using the generateContent method directly as supported by @google/genai 2.17.1
     let contents: any[] = [{ role: "user", parts: [{ text: data.message }] }];
 
     for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
-      const response = await genAI.models.generateContent({
-        model: modelName,
-        config: { systemInstruction, tools } as any,
-        contents,
-      });
+      console.log(`[Agent] Iteration ${iteration} starting...`);
+      let response;
+      try {
+        // Correct usage for this SDK version: models.generateContent(request)
+        response = await (genAI as any).models.generateContent({
+          model: modelName,
+          contents,
+          systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
+          tools: tools?.[0]?.functionDeclarations ? [
+            { functionDeclarations: tools[0].functionDeclarations.map(fd => ({ ...fd, parameters: fd.parameters as any })) }
+          ] : tools,
+        });
+        console.log(`[Agent] Iteration ${iteration} response received.`);
+      } catch (err: any) {
+        console.error(`[Agent] Iteration ${iteration} failed:`, err);
+        // If it's a validation error or something we can report to user
+        const errorMessage = err?.message || String(err);
+        if (errorMessage.includes("400") || errorMessage.includes("invalid")) {
+           return {
+            success: false as const,
+            content: `Error de la IA: ${errorMessage}`,
+            thought: toolLog.length > 0 ? toolLog.join("\n") : undefined,
+            conversationId,
+          };
+        }
+        throw err;
+      }
 
       // Response structure: GenerateContentResponse
       // candidate is generated content
@@ -229,6 +250,15 @@ export const processAgentMessage = createServerFn({ method: "POST" })
 
       if (!modelContent) {
         throw new Error("No response from AI model.");
+      }
+
+      if (candidate.finishReason === "SAFETY") {
+        return {
+          success: false as const,
+          content: "La IA bloqueó la respuesta por motivos de seguridad.",
+          thought: toolLog.length > 0 ? toolLog.join("\n") : undefined,
+          conversationId,
+        };
       }
 
       contents.push(modelContent);
@@ -261,12 +291,12 @@ export const processAgentMessage = createServerFn({ method: "POST" })
         break;
       }
 
-      const toolResponses: any[] = [];
+      const toolParts: any[] = [];
       for (const call of calls) {
         if (!call.name) continue;
         toolLog.push(`${call.name}(${JSON.stringify(call.args ?? {})})`);
         const toolResult = await executeTool(call.name, call.args as any);
-        toolResponses.push({
+        toolParts.push({
           functionResponse: {
             name: call.name,
             response: { result: toolResult },
@@ -274,7 +304,7 @@ export const processAgentMessage = createServerFn({ method: "POST" })
         });
       }
 
-      contents.push({ role: "user", parts: toolResponses });
+      contents.push({ role: "user", parts: toolParts });
 
       if (iteration === MAX_TOOL_ITERATIONS - 1) {
         finalText = "No pude terminar de explorar el repositorio en el tiempo asignado. ¿Puedes ser más específico?";
