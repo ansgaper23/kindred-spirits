@@ -24,6 +24,9 @@ import {
   connectRepository,
   disconnectRepository,
 } from "@/lib/repos/repos.functions";
+import { checkAgentConfig } from "@/lib/agent/gemini.functions";
+import { AlertCircle, Terminal } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const Route = createFileRoute("/dashboard/")({
   component: DashboardHome,
