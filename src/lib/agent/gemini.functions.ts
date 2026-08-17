@@ -166,6 +166,7 @@ export const processAgentMessage = createServerFn({ method: "POST" })
       args: Record<string, unknown> | undefined,
     ): Promise<unknown> {
       try {
+        if (!repo) throw new Error("Repositorio no encontrado.");
         const path = typeof args?.["path"] === "string" ? args["path"] : "";
         switch (name) {
           case "list_files": {
