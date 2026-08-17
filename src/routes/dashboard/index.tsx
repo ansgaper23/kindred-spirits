@@ -62,16 +62,6 @@ function DashboardHome() {
   const runStartGithubOAuth = useServerFn(startGithubOAuth);
   const runCompleteGithubOAuth = useServerFn(completeGithubOAuth);
 
-  const profileQuery = useQuery({
-    queryKey: ["profile"],
-    queryFn: () => runEnsureProfile({
-      data: {
-        email: "", // Will be filled from current metadata if needed by the handler, 
-                  // but we mainly want the status
-      }
-    }),
-  });
-
   const reposQuery = useQuery({
     queryKey: ["repositories"],
     queryFn: () => runListRepositories(),
@@ -80,9 +70,7 @@ function DashboardHome() {
   const githubReposQuery = useQuery({
     queryKey: ["github-repos"],
     queryFn: () => runListGithubRepos(),
-    // Auto-fetch if the profile says we are connected, or if the dialog is open
-    enabled: !!profileQuery.data?.githubConnected || dialogOpen,
-    retry: false, // Don't spam if token is actually invalid
+    enabled: dialogOpen,
   });
 
   const connectMutation = useMutation({
@@ -109,7 +97,8 @@ function DashboardHome() {
   const githubLoginMutation = useMutation({
     mutationFn: async () => {
       const popup = window.open("", "codeflow-github-oauth", "width=620,height=760");
-      if (!popup) throw new Error("El navegador bloqueó la ventana emergente. Permítela e intenta de nuevo.");
+      if (!popup)
+        throw new Error("El navegador bloqueó la ventana emergente. Permítela e intenta de nuevo.");
 
       try {
         const { authorizationUrl } = await runStartGithubOAuth();
@@ -120,7 +109,11 @@ function DashboardHome() {
             if (poll !== undefined) window.clearInterval(poll);
           };
           const onMessage = (event: MessageEvent) => {
-            if (event.origin !== window.location.origin && !event.origin.includes('lovableproject.com')) return;
+            if (
+              event.origin !== window.location.origin &&
+              !event.origin.includes("lovableproject.com")
+            )
+              return;
             if (event.data?.source !== "codeflow-github-oauth") return;
             cleanup();
             if (event.data.ok) resolve({ code: event.data.code, state: event.data.state });
@@ -148,9 +141,10 @@ function DashboardHome() {
       setDialogOpen(true);
     },
     onError: (err: unknown) =>
-      toast.error(err instanceof Error ? err.message : "No se pudo iniciar la conexión con GitHub."),
+      toast.error(
+        err instanceof Error ? err.message : "No se pudo iniciar la conexión con GitHub.",
+      ),
   });
-
 
   const disconnectGithubMutation = useMutation({
     mutationFn: () => runDisconnectGithub(),
@@ -181,10 +175,10 @@ function DashboardHome() {
               <Github className="w-6 h-6 text-slate-100" />
               <h3 className="text-lg font-bold text-slate-100">GitHub OAuth App</h3>
             </div>
-            {githubReposQuery.data?.connected || profileQuery.data?.githubConnected ? (
+            {githubReposQuery.data?.connected ? (
               <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400 uppercase tracking-widest w-fit shadow-[0_0_10px_rgba(16,185,129,0.1)]">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Conectado (@{githubReposQuery.data?.username || profileQuery.data?.profile?.github_username || "..."})
+                Conectado (@{githubReposQuery.data.username})
               </div>
             ) : (
               <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-500/10 border border-white/5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-fit">
@@ -193,24 +187,34 @@ function DashboardHome() {
               </div>
             )}
           </div>
-          
+
           <div className="flex items-center gap-3 w-full md:w-auto">
-            <Button 
+            <Button
               className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 h-10 shadow-[0_0_20px_rgba(37,99,235,0.3)] transition-all active:scale-95"
-              onClick={() => githubReposQuery.data?.connected ? setDialogOpen(true) : githubLoginMutation.mutate()}
+              onClick={() =>
+                githubReposQuery.data?.connected
+                  ? setDialogOpen(true)
+                  : githubLoginMutation.mutate()
+              }
               disabled={githubLoginMutation.isPending}
             >
-              {githubLoginMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Github className="w-4 h-4 mr-2" />}
+              {githubLoginMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Github className="w-4 h-4 mr-2" />
+              )}
               {githubReposQuery.data?.connected ? "Añadir repositorio" : "Conectar GitHub"}
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="icon"
               className="h-10 w-auto px-4 bg-slate-950/50 border-white/10 text-slate-100 hover:bg-white/5 transition-all"
               onClick={() => queryClient.invalidateQueries({ queryKey: ["github-repos"] })}
               disabled={githubReposQuery.isLoading}
             >
-              <RefreshCw className={cn("w-4 h-4 mr-2", githubReposQuery.isLoading && "animate-spin")} />
+              <RefreshCw
+                className={cn("w-4 h-4 mr-2", githubReposQuery.isLoading && "animate-spin")}
+              />
               Actualizar
             </Button>
           </div>
@@ -225,9 +229,9 @@ function DashboardHome() {
           </p>
         </div>
         {!githubReposQuery.isLoading && repos.length > 0 && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="text-xs text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
             onClick={() => setDialogOpen(true)}
           >
@@ -240,7 +244,8 @@ function DashboardHome() {
             <DialogHeader>
               <DialogTitle>Conectar un repositorio</DialogTitle>
               <DialogDescription>
-                Elige uno de tu cuenta de GitHub (vía OAuth App) o pega el nombre de un repo público.
+                Elige uno de tu cuenta de GitHub (vía OAuth App) o pega el nombre de un repo
+                público.
               </DialogDescription>
             </DialogHeader>
             <Tabs defaultValue={githubReposQuery.data?.connected ? "github" : "manual"}>
@@ -254,10 +259,13 @@ function DashboardHome() {
                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : !githubReposQuery.data?.connected ? (
-                   <div className="space-y-4 py-4">
+                  <div className="space-y-4 py-4">
                     <div className="text-sm text-muted-foreground text-center space-y-2">
                       <Github className="w-8 h-8 mx-auto opacity-60 mb-1" />
-                      <p>Conecta tu cuenta mediante la aplicación oficial de GitHub para acceder a tus repositorios.</p>
+                      <p>
+                        Conecta tu cuenta mediante la aplicación oficial de GitHub para acceder a
+                        tus repositorios.
+                      </p>
                     </div>
                     <Button
                       className="w-full bg-blue-600 hover:bg-blue-500"
@@ -304,58 +312,73 @@ function DashboardHome() {
                     <div className="max-h-64 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
                       {(githubReposQuery.data?.repos ?? []).length > 0 ? (
                         (githubReposQuery.data?.repos ?? [])
-                          .filter(repo => 
-                            repo.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            (repo.description && repo.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                          .filter(
+                            (repo) =>
+                              repo.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              (repo.description &&
+                                repo.description.toLowerCase().includes(searchQuery.toLowerCase())),
                           )
                           .map((repo) => (
-                          <button
-                            key={repo.fullName}
-                            className="w-full text-left px-3 py-2.5 rounded-md hover:bg-white/5 flex items-center justify-between gap-3 text-sm disabled:opacity-50 transition-colors border border-transparent hover:border-white/10 group"
-                            disabled={connectMutation.isPending}
-                            onClick={() => connectMutation.mutate(repo.fullName)}
-                          >
-                            <span className="flex items-center gap-3 min-w-0">
-                              {repo.private ? (
-                                <Lock className="w-3.5 h-3.5 shrink-0 text-amber-500/70" />
-                              ) : (
-                                <Globe className="w-3.5 h-3.5 shrink-0 text-blue-400/70" />
-                              )}
-                              <div className="flex flex-col truncate">
-                                <span className="truncate font-medium text-slate-200 group-hover:text-white">{repo.fullName}</span>
-                                {repo.description && (
-                                  <span className="text-[11px] text-slate-500 truncate">{repo.description}</span>
+                            <button
+                              key={repo.fullName}
+                              className="w-full text-left px-3 py-2.5 rounded-md hover:bg-white/5 flex items-center justify-between gap-3 text-sm disabled:opacity-50 transition-colors border border-transparent hover:border-white/10 group"
+                              disabled={connectMutation.isPending}
+                              onClick={() => connectMutation.mutate(repo.fullName)}
+                            >
+                              <span className="flex items-center gap-3 min-w-0">
+                                {repo.private ? (
+                                  <Lock className="w-3.5 h-3.5 shrink-0 text-amber-500/70" />
+                                ) : (
+                                  <Globe className="w-3.5 h-3.5 shrink-0 text-blue-400/70" />
                                 )}
-                              </div>
-                            </span>
-                            <Plus className="w-4 h-4 shrink-0 text-slate-600 group-hover:text-blue-400 transition-colors" />
-                          </button>
-                        ))
+                                <div className="flex flex-col truncate">
+                                  <span className="truncate font-medium text-slate-200 group-hover:text-white">
+                                    {repo.fullName}
+                                  </span>
+                                  {repo.description && (
+                                    <span className="text-[11px] text-slate-500 truncate">
+                                      {repo.description}
+                                    </span>
+                                  )}
+                                </div>
+                              </span>
+                              <Plus className="w-4 h-4 shrink-0 text-slate-600 group-hover:text-blue-400 transition-colors" />
+                            </button>
+                          ))
                       ) : (
                         <div className="flex flex-col items-center justify-center py-10 text-center space-y-3">
                           <Github className="w-8 h-8 text-slate-600 opacity-20" />
-                          <p className="text-sm text-slate-500 max-w-[200px]">
-                            No se encontraron repositorios. Prueba a pulsar "Actualizar" o verifica los permisos en GitHub.
-                          </p>
-                          <Button 
-                            variant="link" 
-                            size="sm" 
+                          {githubReposQuery.data?.error ? (
+                            <p className="text-sm text-red-400 max-w-[280px] break-words">
+                              Error al consultar GitHub: {githubReposQuery.data.error}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-slate-500 max-w-[200px]">
+                              No se encontraron repositorios. Prueba a pulsar "Actualizar" o
+                              verifica los permisos en GitHub.
+                            </p>
+                          )}
+                          <Button
+                            variant="link"
+                            size="sm"
                             className="text-blue-400 text-xs"
-                            onClick={() => window.open('https://github.com/settings/connections/applications/' + (process.env['GITHUB_OAUTH_CLIENT_ID'] || ''), '_blank')}
+                            onClick={() =>
+                              window.open("https://github.com/settings/applications", "_blank")
+                            }
                           >
                             Revisar permisos en GitHub <ExternalLink className="w-3 h-3 ml-1" />
                           </Button>
                         </div>
                       )}
-                      {githubReposQuery.data?.repos && 
-                       githubReposQuery.data.repos.length > 0 &&
-                       githubReposQuery.data.repos.filter(repo => 
-                         repo.fullName.toLowerCase().includes(searchQuery.toLowerCase())
-                       ).length === 0 && (
-                        <p className="text-sm text-slate-500 text-center py-8">
-                          No se encontraron repositorios que coincidan con "{searchQuery}".
-                        </p>
-                      )}
+                      {githubReposQuery.data?.repos &&
+                        githubReposQuery.data.repos.length > 0 &&
+                        githubReposQuery.data.repos.filter((repo) =>
+                          repo.fullName.toLowerCase().includes(searchQuery.toLowerCase()),
+                        ).length === 0 && (
+                          <p className="text-sm text-slate-500 text-center py-8">
+                            No se encontraron repositorios que coincidan con "{searchQuery}".
+                          </p>
+                        )}
                     </div>
                   </div>
                 )}
