@@ -37,6 +37,7 @@ import {
   disconnectRepository,
 } from "@/lib/repos/repos.functions";
 import { saveGithubToken, disconnectGithub } from "@/lib/profile/profile.functions";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard/")({
   component: DashboardHome,
