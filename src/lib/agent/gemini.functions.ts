@@ -95,7 +95,12 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     const { createTwoFilesPatch } = await import("diff");
 
     const genAI = new GoogleGenAI({ apiKey });
-    const modelName = data.model || process.env["GEMINI_MODEL"] || "gemini-1.5-flash";
+    
+    // Normalize model name for the SDK (remove 'models/' prefix if present, as the SDK adds it)
+    let modelName = data.model || process.env["GEMINI_MODEL"] || "gemini-1.5-flash";
+    if (modelName.startsWith("models/")) {
+      modelName = modelName.replace("models/", "");
+    }
 
     const systemInstruction = [
       "You are the CodeFlow agent, a careful senior engineer pair-programming inside a chat UI.",
@@ -219,6 +224,8 @@ export const processAgentMessage = createServerFn({ method: "POST" })
       let response;
       try {
         // Correct usage for this SDK version: models.generateContent(request)
+        // Note: The SDK v2.x requires the model identifier to be just the name (e.g., 'gemini-1.5-flash')
+        // as it internally constructs the 'models/' or 'tunedModels/' path.
         response = await (genAI as any).models.generateContent({
           model: modelName,
           contents,
