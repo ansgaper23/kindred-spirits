@@ -157,8 +157,7 @@ function Home() {
           conversando con IA
         </h1>
         <p className="mx-auto mt-6 max-w-xl text-balance text-lg text-slate-400">
-          Conecta un repositorio, describe el cambio que quieres y revisa el diff antes de
-          aprobarlo. Ningún cambio se aplica sin tu confirmación.
+          La funciona de la web es seleccionar el repositorio, que se habra un chat y editar ese repositorio por medio de la IA, que en este caso es gemini.
         </p>
         <div className="mt-8 flex items-center justify-center gap-3">
           <Button
