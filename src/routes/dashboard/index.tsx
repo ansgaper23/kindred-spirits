@@ -39,6 +39,8 @@ import {
   disconnectRepository,
 } from "@/lib/repos/repos.functions";
 import { ensureProfile, disconnectGithub } from "@/lib/profile/profile.functions";
+import { startGithubOAuth, completeGithubOAuth } from "@/lib/github/oauth.functions";
+
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard/")({
