@@ -99,11 +99,14 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     // Normalize model name for the SDK
     let modelName = data.model || process.env["GEMINI_MODEL"] || "gemini-1.5-flash";
     
-    // For @google/genai v2.17.1, we should ensure it has the 'models/' prefix 
-    // when calling models.generateContent directly, as that seems to be what 
-    // the API expects when it fails with "models/gemini-1.5-flash is not found".
-    if (!modelName.startsWith("models/") && !modelName.startsWith("tunedModels/")) {
-      modelName = `models/${modelName}`;
+    // For @google/genai v2.17.1, we MUST NOT include 'models/' when calling models.generateContent
+    // The previous error "models/gemini-1.5-flash is not found" happened because the SDK 
+    // was doubling it to "models/models/gemini-1.5-flash".
+    if (modelName.startsWith("models/")) {
+      modelName = modelName.replace("models/", "");
+    }
+    if (modelName.startsWith("tunedModels/")) {
+      modelName = modelName.replace("tunedModels/", "");
     }
 
     const systemInstruction = [
