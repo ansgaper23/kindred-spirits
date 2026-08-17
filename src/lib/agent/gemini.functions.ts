@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 // Type-only import: erased at compile time, so this doesn't pull @google/genai
 // into the client bundle — the real (runtime) import happens dynamically below.
-import type { Content, Part } from "@google/genai";
+import type { Content } from "@google/genai";
 
 const MAX_TOOL_ITERATIONS = 6;
 const MAX_FILE_CHARS = 12_000;
@@ -94,9 +94,12 @@ export const processAgentMessage = createServerFn({ method: "POST" })
     const { GoogleGenAI } = await import("@google/genai");
     const { createTwoFilesPatch } = await import("diff");
 
-    const genAI = new GoogleGenAI(apiKey);
+    // The newer @google/genai SDK (>= 0.x / 1.x) uses a constructor that takes an options object or string.
+    // If it's the very latest, it might expect { apiKey: string }.
+    const genAI = new GoogleGenAI(apiKey as any);
     const modelName = data.model || process.env["GEMINI_MODEL"] || "gemini-1.5-flash";
-    const model = genAI.getGenerativeModel({
+    
+    const model = (genAI as any).getGenerativeModel({
       model: modelName,
       systemInstruction: [
         "You are the CodeFlow agent, a careful senior engineer pair-programming inside a chat UI.",
