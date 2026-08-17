@@ -96,8 +96,15 @@ export const processAgentMessage = createServerFn({ method: "POST" })
 
     const genAI = new GoogleGenAI({ apiKey });
     
-    // Normalize model name for the SDK (remove 'models/' prefix if present, as the SDK adds it)
+    // Normalize model name for the SDK
     let modelName = data.model || process.env["GEMINI_MODEL"] || "gemini-1.5-flash";
+    
+    // The SDK v2.x (@google/genai) expects just the model name without 'models/' 
+    // BUT the v1beta API (used via generateContent) SOMETIMES requires it depending on the exact build.
+    // However, the error "models/gemini-1.5-flash is not found for API version v1beta" 
+    // indicates that the full path IS expected but maybe not in the 'model' field of the request
+    // or the SDK is being too smart. 
+    // Actually, for @google/genai v2.17.1, it should be JUST the name if it's a base model.
     if (modelName.startsWith("models/")) {
       modelName = modelName.replace("models/", "");
     }
