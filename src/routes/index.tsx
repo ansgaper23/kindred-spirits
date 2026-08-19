@@ -70,15 +70,40 @@ function Home() {
         @keyframes cf-float { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-24px) } }
         @keyframes cf-blink { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
         @keyframes cf-pulse-dot { 0%, 100% { box-shadow: 0 0 0 0 rgba(34,211,238,0.6) } 50% { box-shadow: 0 0 0 6px rgba(34,211,238,0) } }
+        @keyframes meteor {
+          0% { transform: rotate(215deg) translateX(0); opacity: 1; }
+          70% { opacity: 1; }
+          100% { transform: rotate(215deg) translateX(-1000px); opacity: 0; }
+        }
         .cf-animate-float { animation: cf-float 8s ease-in-out infinite; }
         .cf-animate-float-delay { animation: cf-float 8s ease-in-out infinite; animation-delay: -4s; }
         .cf-cursor::after { content: ""; display: inline-block; width: 7px; height: 1em; margin-left: 2px; background: currentColor; vertical-align: text-bottom; animation: cf-blink 1s step-end infinite; }
         .cf-dot { animation: cf-pulse-dot 2s infinite; }
         .cf-grid-fade { mask-image: radial-gradient(ellipse 80% 55% at 50% 0%, black 40%, transparent 100%); -webkit-mask-image: radial-gradient(ellipse 80% 55% at 50% 0%, black 40%, transparent 100%); }
+        .meteor {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 2px;
+          height: 2px;
+          background: #fff;
+          border-radius: 50%;
+          box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1), 0 0 0 8px rgba(255, 255, 255, 0.1), 0 0 20px rgba(255, 255, 255, 1);
+          animation: meteor 5s linear infinite;
+        }
+        .meteor::before {
+          content: "";
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 300px;
+          height: 1px;
+          background: linear-gradient(90deg, #fff, transparent);
+        }
       `}</style>
 
-      {/* Ambient background: grid + glow orbs */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
+      {/* Ambient background: grid + glow orbs + meteor shower */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-slate-950" />
         <div
           className="cf-grid-fade absolute inset-0 opacity-60"
@@ -88,6 +113,21 @@ function Home() {
             backgroundSize: "56px 56px",
           }}
         />
+        
+        {/* Meteor Shower */}
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="meteor"
+            style={{
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 5}s`,
+              animationDuration: `${2 + Math.random() * 3}s`,
+            }}
+          />
+        ))}
+
         <div className="cf-animate-float absolute -top-32 left-1/4 h-[420px] w-[420px] rounded-full bg-cyan-500/20 blur-[110px]" />
         <div className="cf-animate-float-delay absolute top-1/4 -right-32 h-[420px] w-[420px] rounded-full bg-fuchsia-500/20 blur-[110px]" />
         <div className="absolute bottom-0 left-1/3 h-[380px] w-[380px] rounded-full bg-blue-600/10 blur-[110px]" />
