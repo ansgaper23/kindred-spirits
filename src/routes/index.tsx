@@ -70,11 +70,36 @@ function Home() {
         @keyframes cf-float { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-24px) } }
         @keyframes cf-blink { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
         @keyframes cf-pulse-dot { 0%, 100% { box-shadow: 0 0 0 0 rgba(34,211,238,0.6) } 50% { box-shadow: 0 0 0 6px rgba(34,211,238,0) } }
+        @keyframes meteor {
+          0% { transform: rotate(215deg) translateX(0); opacity: 1; }
+          70% { opacity: 1; }
+          100% { transform: rotate(215deg) translateX(-1000px); opacity: 0; }
+        }
         .cf-animate-float { animation: cf-float 8s ease-in-out infinite; }
         .cf-animate-float-delay { animation: cf-float 8s ease-in-out infinite; animation-delay: -4s; }
         .cf-cursor::after { content: ""; display: inline-block; width: 7px; height: 1em; margin-left: 2px; background: currentColor; vertical-align: text-bottom; animation: cf-blink 1s step-end infinite; }
         .cf-dot { animation: cf-pulse-dot 2s infinite; }
         .cf-grid-fade { mask-image: radial-gradient(ellipse 80% 55% at 50% 0%, black 40%, transparent 100%); -webkit-mask-image: radial-gradient(ellipse 80% 55% at 50% 0%, black 40%, transparent 100%); }
+        .meteor {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 2px;
+          height: 2px;
+          background: #fff;
+          border-radius: 50%;
+          box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1), 0 0 0 8px rgba(255, 255, 255, 0.1), 0 0 20px rgba(255, 255, 255, 1);
+          animation: meteor 5s linear infinite;
+        }
+        .meteor::before {
+          content: "";
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 300px;
+          height: 1px;
+          background: linear-gradient(90deg, #fff, transparent);
+        }
       `}</style>
 
       {/* Ambient background: grid + glow orbs */}
