@@ -102,8 +102,8 @@ function Home() {
         }
       `}</style>
 
-      {/* Ambient background: grid + glow orbs */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
+      {/* Ambient background: grid + glow orbs + meteor shower */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-slate-950" />
         <div
           className="cf-grid-fade absolute inset-0 opacity-60"
@@ -113,6 +113,21 @@ function Home() {
             backgroundSize: "56px 56px",
           }}
         />
+        
+        {/* Meteor Shower */}
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="meteor"
+            style={{
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 5}s`,
+              animationDuration: `${2 + Math.random() * 3}s`,
+            }}
+          />
+        ))}
+
         <div className="cf-animate-float absolute -top-32 left-1/4 h-[420px] w-[420px] rounded-full bg-cyan-500/20 blur-[110px]" />
         <div className="cf-animate-float-delay absolute top-1/4 -right-32 h-[420px] w-[420px] rounded-full bg-fuchsia-500/20 blur-[110px]" />
         <div className="absolute bottom-0 left-1/3 h-[380px] w-[380px] rounded-full bg-blue-600/10 blur-[110px]" />
